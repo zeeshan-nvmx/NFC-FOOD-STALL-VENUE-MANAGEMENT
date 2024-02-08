@@ -19,6 +19,10 @@ const UserSchema = new mongoose.Schema({
   motherStall: {
     type: String,
   },
+  stallId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Stall'
+  },
   role: {
     type: String,
     enum: ['masterAdmin', 'rechargerAdmin', 'recharger', 'stallAdmin', 'stallCashier'],
