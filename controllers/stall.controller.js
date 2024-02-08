@@ -11,6 +11,30 @@ exports.createStall = async (req, res) => {
   }
 }
 
+// Get a list of all stalls alphabetically
+exports.getAllStalls = async (req, res) => {
+  try {
+    const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall');
+    res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls });
+  } catch (error) {
+    res.status(400).json({ message: 'Error retrieving stalls', error: error.message });
+  }
+};
+
+// Get a single stall with all its data
+exports.getStall = async (req, res) => {
+  const { stallId } = req.params;
+  try {
+    const stall = await Stall.findById(stallId);
+    if (!stall) {
+      return res.status(404).json({ message: 'Stall not found' });
+    }
+    res.status(200).json({ message: 'Stall retrieved successfully', data: stall });
+  } catch (error) {
+    res.status(400).json({ message: 'Error retrieving stall', error: error.message });
+  }
+}
+
 // Edit a stall
 exports.editStall = async (req, res) => {
   const { stallId } = req.params

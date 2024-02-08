@@ -1,5 +1,6 @@
 const axios = require('axios')
 const User = require('../models/auth.model')
+const Stall = require('../models/stall.model')
 const { createJWT } = require('../utils/jwt')
 const { hashPassword, comparePassword } = require('../utils/password')
 // const { validateRequestFields, generateDefaultErrorMessage } = require('../utils/validations')
@@ -24,25 +25,44 @@ async function register(req, res) {
     return res.status(400).json({ message: `You are not allowed to create a user with role: ${role}` })
   }
 
-  // Check for stallId and motherStall if the role is stallAdmin or stallCashier
+  // Ensure stallId and motherStall are provided for stallAdmin or stallCashier roles
   if ((role === 'stallAdmin' || role === 'stallCashier') && (!stallId || !motherStall)) {
     return res.status(400).json({ message: 'stallId and motherStall are required for this role' })
   }
 
   const hashedPassword = await hashPassword(password)
-  const user = await User.create({
+  // Create the user with motherStall and stallId if applicable
+  const user = new User({
     name,
     phone,
     role,
     password: hashedPassword,
-    ...(role === 'stallAdmin' || role === 'stallCashier' ? { motherStall, stallId } : {}),
+    motherStall: role === 'stallAdmin' || role === 'stallCashier' ? motherStall : undefined,
+    stallId: role === 'stallAdmin' || role === 'stallCashier' ? stallId : undefined,
   })
 
-  const tokenUser = { userId: user._id, name, phone, role, ...(role === 'stallAdmin' || role === 'stallCashier' ? { motherStall, stallId } : {}) }
-  const token = await createJWT(tokenUser)
-  res.status(201).json({ token, message: `New user successfully registered with role: ${role}`, user: tokenUser })
-}
+  const savedUser = await user.save()
 
+  // Add user to Stall model based on role
+  if (role === 'stallAdmin') {
+    await Stall.findByIdAndUpdate(stallId, { $set: { stallAdmin: savedUser._id } })
+  } else if (role === 'stallCashier') {
+    await Stall.findByIdAndUpdate(stallId, { $push: { stallCashiers: savedUser._id } })
+  }
+
+  const token = await createJWT({ userId: savedUser._id, role: savedUser.role })
+  res.status(201).json({
+    token,
+    message: `New user successfully registered with role: ${role}`,
+    user: {
+      id: savedUser._id,
+      name: savedUser.name,
+      role: savedUser.role,
+      motherStall: savedUser.motherStall,
+      stallId: savedUser.stallId,
+    },
+  })
+}
 
 
 async function login(req, res) {

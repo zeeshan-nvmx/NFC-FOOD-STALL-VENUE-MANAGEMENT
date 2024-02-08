@@ -5,6 +5,9 @@ const stallController = require('../controllers/stall.controller')
 // Route to create a new stall
 router.post('/stall', stallController.createStall)
 
+router.get('/stall', stallController.getAllStalls)
+router.get('/stall/:stallId', stallController.getStall)
+
 // Route to edit an existing stall
 router.put('/stall/:stallId', stallController.editStall)
 
