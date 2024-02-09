@@ -166,7 +166,7 @@ async function validateOTPAndResetPassword(req, res) {
 
   const schema = Joi.object({
     phone: Joi.string().length(11).required(),
-    otp: Joi.string().length(6).required(),
+    otp: Joi.string().required(),
     newPassword: Joi.string().min(6).required(),   
   })
 
