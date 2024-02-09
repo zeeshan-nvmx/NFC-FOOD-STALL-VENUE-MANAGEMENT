@@ -12,8 +12,8 @@ async function authenticateUser(req, res, next) {
 
   try {
     const verifiedToken = await verifyToken(token)
-    const { userId, name, phone, role, motherStall } = verifiedToken
-    req.user = { userId, name, phone, role, motherStall }
+    const { userId, name, phone, role, motherStall, stallId } = verifiedToken
+    req.user = { userId, name, phone, role, motherStall, stallId }
     next()
   } catch (error) {
     res.status(401).json({ message: "Invalid token" })
