@@ -1,10 +1,31 @@
 const Order = require('../models/order.model')
 const Customer = require('../models/customer.model')
+const Joi = require('joi')
 
 // Create a new order
 exports.createOrder = async (req, res) => {
-  const { customer, stall, orderItems, totalAmount, vat, orderServedBy } = req.body
+
+  const orderItemSchema = Joi.object({
+    menuItemId: Joi.string().required(),
+    quantity: Joi.number().integer().min(1).required(),
+    price: Joi.number().min(0).required(),
+  })
+
+  const orderSchema = Joi.object({
+    customer: Joi.string().required(),
+    stallId: Joi.string().required(),
+    orderItems: Joi.array().items(orderItemSchema).required(),
+    totalAmount: Joi.number().required(),
+    vat: Joi.number().required(),
+    orderServedBy: Joi.string().required(),
+  })
+
+  
   try {
+
+    await orderSchema.validateAsync(req.body)
+    const { customer, stall, orderItems, totalAmount, vat, orderServedBy } = req.body
+
     const newOrder = await Order.create({
       customer,
       stall,
@@ -15,23 +36,23 @@ exports.createOrder = async (req, res) => {
     })
     res.status(201).json({ message: 'Order created successfully', order: newOrder })
   } catch (error) {
-    res.status(400).json({ message: 'Error creating order', error: error.message })
+    res.status(400).json({ message: error.message })
   }
 }
 
 // Retrieve all orders for a specific stall with pagination
 exports.getOrdersByStall = async (req, res) => {
-  const { stall } = req.params
+  const { stallId } = req.params
   const page = parseInt(req.query.page) || 1
   const limit = parseInt(req.query.limit) || 10
   const skip = (page - 1) * limit
 
   try {
-    const orders = await Order.find({ stall }).skip(skip).limit(limit).sort('-orderDate')
-    const total = await Order.countDocuments({ stall })
+    const orders = await Order.find({ stallId }).skip(skip).limit(limit).sort('-orderDate')
+    const total = await Order.countDocuments({ stallId })
     res.json({ orders, total, page, pages: Math.ceil(total / limit) })
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving orders', error: error.message })
+    res.status(400).json({ message: error.message })
   }
 }
 
@@ -65,7 +86,7 @@ exports.getOrder = async (req, res) => {
     response.customer = customer
     res.json(response)
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving order', error: error.message })
+    res.status(400).json({ message: error.message })
   }
 }
 
@@ -82,7 +103,7 @@ exports.updateOrder = async (req, res) => {
     }
     res.json({ message: 'Order updated successfully', order })
   } catch (error) {
-    res.status(400).json({ message: 'Error updating order', error: error.message })
+    res.status(400).json({ message: error.message })
   }
 }
 
@@ -97,7 +118,7 @@ exports.deleteOrder = async (req, res) => {
     }
     res.json({ message: 'Order deleted successfully' })
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting order', error: error.message })
+    res.status(500).json({ message: error.message })
   }
 }
 
@@ -139,6 +160,6 @@ exports.getOrdersSummaryByStall = async (req, res) => {
       limit,
     })
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving orders summary', error: error.message })
+    res.status(400).json({ message: error.message })
   }
 }

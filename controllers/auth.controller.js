@@ -19,7 +19,7 @@ async function register(req, res) {
 
   try {
 
-    await schema.validateAsync(req.body)
+    await schema.validateAsync(req.body, { abortEarly: false })
 
     const { name, phone, password, role, motherStall, stallId, creatorsRole } = req.body
     
@@ -90,7 +90,7 @@ async function login(req, res) {
 
   try {
 
-    await schema.validateAsync(req.body)
+    await schema.validateAsync(req.body, { abortEarly: false })
 
     const { phone, password } = req.body
     
@@ -172,7 +172,7 @@ async function validateOTPAndResetPassword(req, res) {
 
   try {
 
-    await schema.validateAsync(req.body)
+    await schema.validateAsync(req.body, { abortEarly: false })
 
     const { phone, otp, newPassword } = req.body
 

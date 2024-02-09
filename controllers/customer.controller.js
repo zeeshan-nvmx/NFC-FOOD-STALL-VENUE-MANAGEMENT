@@ -1,9 +1,20 @@
 const Customer = require('../models/customer.model')
 const User = require('../models/auth.model')
+const Joi = require('joi')
 
 // Create a new customer with a card UID
 exports.createCustomer = async (req, res) => {
+
+  const schema = Joi.object({
+    name: Joi.string(),
+    phone: Joi.string().length(11).required(),
+    cardUid: Joi.string().required(),
+    moneyLeft: Joi.number().min(0),
+    createdBy: Joi.string().required(),
+  })
+
   try {
+    await schema.validateAsync(req.body, { abortEarly: false })
     const { name, phone, cardUid, moneyLeft, createdBy } = req.body
     // Ensure createdBy (recharger or recharger admin) exists and has the right role
     const creator = await User.findById(createdBy)
@@ -19,7 +30,15 @@ exports.createCustomer = async (req, res) => {
 
 // Recharge a card
 exports.rechargeCard = async (req, res) => {
+
+  const schema = Joi.object({
+    cardUid: Joi.string().required(),
+    amount: Joi.number().min(0),
+    rechargerId: Joi.string().required(),
+  })
+
   try {
+    await schema.validateAsync(req.body, { abortEarly: false })
     const { cardUid, amount, rechargerId } = req.body
     const customer = await Customer.findOne({ cardUid })
     if (!customer) {
