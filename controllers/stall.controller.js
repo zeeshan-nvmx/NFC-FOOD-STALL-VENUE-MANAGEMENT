@@ -12,16 +12,29 @@ exports.createStall = async (req, res) => {
 }
 
 // Get a list of all stalls alphabetically
-exports.getAllStalls = async (req, res) => {
-  try {
-    const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall');
-    res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls });
-  } catch (error) {
-    res.status(400).json({ message: 'Error retrieving stalls', error: error.message });
-  }
-};
+// exports.getAllStalls = async (req, res) => {
+//   try {
+//     const stalls = await Stall.find({}, '_id motherStall name stallAdmin').sort('motherStall');
+//     res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls });
+//   } catch (error) {
+//     res.status(400).json({ message: 'Error retrieving stalls', error: error.message });
+//   }
+// };
 
 // Get a single stall with all its data
+
+exports.getAllStalls = async (req, res) => {
+  try {
+    const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
+      path: 'stallAdmin',
+      select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
+    })
+    res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+  } catch (error) {
+    res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+  }
+}
+
 exports.getStall = async (req, res) => {
   const { stallId } = req.params;
   try {
