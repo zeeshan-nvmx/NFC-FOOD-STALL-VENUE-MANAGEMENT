@@ -13,6 +13,7 @@ require('dotenv').config()
 const authRouter = require('./routes/auth.routes')
 const stallRouter = require('./routes/stall.routes')
 const customerRouter = require('./routes/customer.routes')
+const orderRouter = require('./routes/order.routes')
 
 const connectDB = require('./utils/db')
 // const errorHandler = require('./utils/error-handler')
@@ -33,6 +34,7 @@ app.get('/api/v1/showme', authenticateUser, (req, res) => {
 app.use('/api/v1', authRouter)
 app.use('/api/v1', stallRouter)
 app.use('/api/v1', customerRouter)
+app.use('/api/v1', orderRouter)
 
 
 // app.use(notFoundError)
