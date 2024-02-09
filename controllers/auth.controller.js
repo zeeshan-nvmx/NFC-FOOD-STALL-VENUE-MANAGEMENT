@@ -51,7 +51,7 @@ async function register(req, res) {
     })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Server error during registration' })
+    res.status(500).json({ message: error.message })
   }
 }
 
@@ -71,7 +71,7 @@ async function login(req, res) {
     res.status(200).json({ token, msg: `User: ${storedUser.name} successfully logged in`, user: tokenUser })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Server error during login' })
+    res.status(500).json({ message: error.message })
   }
 }
 
@@ -97,7 +97,7 @@ async function requestPasswordReset(req, res) {
     res.status(200).json({ message: 'OTP sent to your phone' })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Failed to send OTP' })
+    res.status(500).json({ message: error.message })
   }
 }
 
@@ -113,7 +113,7 @@ async function validateOTPAndResetPassword(req, res) {
     res.status(200).json({ message: 'Password has been reset successfully' })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Server error during password reset' })
+    res.status(500).json({  message: error.message })
   }
 }
 
