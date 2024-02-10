@@ -1,7 +1,17 @@
 const Stall = require('../models/stall.model')
+const Joi = require('joi')
 
 // Create a new stall
 exports.createStall = async (req, res) => {
+
+  const schema = Joi.object({
+    motherStall: Joi.string().required(),
+    cardUid: Joi.string().required(),
+    moneyLeft: Joi.number().min(0),
+    createdBy: Joi.string().required(),
+  })
+
+
   const { motherStall, stallAdmin, stallCashiers, menu } = req.body
   try {
     const newStall = await Stall.create({ motherStall, stallAdmin, stallCashiers, menu })

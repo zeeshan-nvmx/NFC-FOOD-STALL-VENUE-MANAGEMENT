@@ -2,6 +2,7 @@ const Order = require('../models/order.model')
 const Customer = require('../models/customer.model')
 const Joi = require('joi')
 
+
 // Create a new order
 exports.createOrder = async (req, res) => {
 
@@ -23,7 +24,7 @@ exports.createOrder = async (req, res) => {
   
   try {
 
-    await orderSchema.validateAsync(req.body)
+    await orderSchema.validateAsync(req.body, { abortEarly: false })
     const { customer, stall, orderItems, totalAmount, vat, orderServedBy } = req.body
 
     const newOrder = await Order.create({

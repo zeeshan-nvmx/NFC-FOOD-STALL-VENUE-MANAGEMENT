@@ -1,26 +1,27 @@
 const express = require('express')
 const router = express.Router()
 const stallController = require('../controllers/stall.controller')
+const { authenticateUser, authorizeUser } = require('../utils/authorize-authenticate')
 
 // Route to create a new stall
-router.post('/stall', stallController.createStall)
+router.post('/stall', authenticateUser, authorizeUser('masterAdmin'), stallController.createStall)
 
-router.get('/stall', stallController.getAllStalls)
-router.get('/stall/:stallId', stallController.getStall)
+router.get('/stall', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger'), stallController.getAllStalls)
+router.get('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger', 'stallAdmin', 'stallCashier'), stallController.getStall)
 
 // Route to edit an existing stall
-router.put('/stall/:stallId', stallController.editStall)
+router.put('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'stallAdmin'), stallController.editStall)
 
 // Route to add a new menu item to a stall's menu
-router.post('/stall/:stallId/menu', stallController.addMenuItem)
+router.post('/stall/:stallId/menu', authenticateUser, authorizeUser('stallAdmin'), stallController.addMenuItem)
 
 // Route to update an existing menu item within a stall's menu
-router.put('/stall/:stallId/menu/:menuId', stallController.updateMenuItem)
+router.put('/stall/:stallId/menu/:menuId', authenticateUser, authorizeUser('stallAdmin'), stallController.updateMenuItem)
 
 // Route to remove a menu item from a stall's menu
-router.delete('/stall/:stallId/menu/:menuId', stallController.removeMenuItem)
+router.delete('/stall/:stallId/menu/:menuId', authenticateUser, authorizeUser('stallAdmin'), stallController.removeMenuItem)
 
 // Route to retrieve the menu for a specific stall
-router.get('/stall/:stallId/menu', stallController.getMenu)
+router.get('/stall/:stallId/menu', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger', 'stallAdmin', 'stallCashier'), stallController.getMenu)
 
 module.exports = router

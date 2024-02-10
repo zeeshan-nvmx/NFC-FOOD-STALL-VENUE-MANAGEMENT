@@ -110,7 +110,7 @@ async function login(req, res) {
     
     res.status(200).json({
       token,
-      msg: `User: ${storedUser.name} successfully logged in`,
+      message: `User: ${storedUser.name} successfully logged in`,
       user: {
         id: storedUser._id,
         name: storedUser.name,

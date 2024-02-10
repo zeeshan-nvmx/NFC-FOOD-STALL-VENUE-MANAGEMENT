@@ -89,7 +89,7 @@ const customerSchema = new mongoose.Schema(
     moneyLeft: { type: Number, default: 0, min: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     rechargeHistory: [rechargeHistorySchema],
-    orderHistory: [orderHistorySchema], // Added orderHistory field
+    orderHistory: [orderHistorySchema], 
   },
   { timestamps: true }
 )
