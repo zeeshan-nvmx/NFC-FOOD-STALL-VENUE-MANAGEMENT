@@ -67,7 +67,7 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
-    stall: { type: mongoose.Schema.Types.ObjectId, ref: 'Stall', required: true },
+    stallId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stall', required: true },
     orderItems: [orderItemSchema],
     totalAmount: { type: Number, required: true },
     vat: Number,

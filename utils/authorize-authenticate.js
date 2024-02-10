@@ -2,21 +2,22 @@ const { verifyToken } = require("./jwt")
 
 
 async function authenticateUser(req, res, next) {
-  const authHeader = req.headers.authorization
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ message: "Authentication token is required" })
-  }
-
-  const token = authHeader.split(" ")[1]
-
+  
   try {
+    const authHeader = req.headers.authorization
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication token is required' })
+    }
+
+    const token = authHeader.split(' ')[1]
+
     const verifiedToken = await verifyToken(token)
     const { userId, name, phone, role, motherStall, stallId } = verifiedToken
     req.user = { userId, name, phone, role, motherStall, stallId }
     next()
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" })
+    res.status(401).json({ message: 'Invalid token' })
   }
   
 }

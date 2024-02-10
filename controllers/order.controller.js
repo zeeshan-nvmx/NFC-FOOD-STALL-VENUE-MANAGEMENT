@@ -7,7 +7,7 @@ const Joi = require('joi')
 exports.createOrder = async (req, res) => {
 
   const orderItemSchema = Joi.object({
-    menuItemId: Joi.string().required(),
+    foodName: Joi.string().required(),
     quantity: Joi.number().integer().min(1).required(),
     price: Joi.number().min(0).required(),
   })
@@ -25,11 +25,11 @@ exports.createOrder = async (req, res) => {
   try {
 
     await orderSchema.validateAsync(req.body, { abortEarly: false })
-    const { customer, stall, orderItems, totalAmount, vat, orderServedBy } = req.body
+    const { customer, stallId, orderItems, totalAmount, vat, orderServedBy } = req.body
 
     const newOrder = await Order.create({
       customer,
-      stall,
+      stallId,
       orderItems,
       totalAmount,
       vat,
