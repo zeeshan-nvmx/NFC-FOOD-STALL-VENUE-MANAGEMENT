@@ -4,16 +4,31 @@ const Joi = require('joi')
 // Create a new stall
 exports.createStall = async (req, res) => {
 
-  const schema = Joi.object({
+  const menuItemSchema = Joi.object({
+    foodName: Joi.string().required(),
+    foodPrice: Joi.number().required(),
+    isAvailable: Joi.boolean().required(),
+  })
+
+  // Define Joi validation for the stall
+  const stallValidationSchema = Joi.object({
     motherStall: Joi.string().required(),
-    cardUid: Joi.string().required(),
-    moneyLeft: Joi.number().min(0),
-    createdBy: Joi.string().required(),
+    stallAdmin: Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')), // Validates MongoDB ObjectId format
+    stallCashiers: Joi.array()
+      .items(
+        Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')) // Validates MongoDB ObjectId format for each cashier
+      )
+      .default([]),
+    menu: Joi.array().items(menuItemSchema),
   })
 
 
-  const { motherStall, stallAdmin, stallCashiers, menu } = req.body
+  
   try {
+
+    await stallValidationSchema.validateAsync(req.body, { abortEarly: false })
+    const { motherStall, stallAdmin, stallCashiers, menu } = req.body
+
     const newStall = await Stall.create({ motherStall, stallAdmin, stallCashiers, menu })
     res.status(201).json({ message: 'Stall created successfully', data: newStall })
   } catch (error) {

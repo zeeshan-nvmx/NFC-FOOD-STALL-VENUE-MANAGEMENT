@@ -10,7 +10,6 @@ const stallSchema = new mongoose.Schema(
     stallAdmin: {
       type: mongoose.Schema.Types.ObjectId, // Reference to User model
       ref: 'User',
-      required: true,
     },
     stallCashiers: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of references to User model
