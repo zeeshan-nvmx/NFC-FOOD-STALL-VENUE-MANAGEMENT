@@ -13,10 +13,10 @@ exports.createStall = async (req, res) => {
   // Define Joi validation for the stall
   const stallValidationSchema = Joi.object({
     motherStall: Joi.string().required(),
-    stallAdmin: Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')), // Validates MongoDB ObjectId format
+    stallAdmin: Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')),
     stallCashiers: Joi.array()
       .items(
-        Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')) // Validates MongoDB ObjectId format for each cashier
+        Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$'))
       )
       .default([]),
     menu: Joi.array().items(menuItemSchema),
@@ -136,7 +136,6 @@ exports.removeMenuItem = async (req, res) => {
     // Filter out the menu item to be removed
     stall.menu = stall.menu.filter((item) => item.id !== menuId)
 
-    // Save the document to persist the changes
     await stall.save()
 
     res.status(200).json({ message: 'Menu item removed successfully', data: stall })

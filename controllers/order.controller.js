@@ -43,62 +43,7 @@ const Joi = require('joi')
 //   }
 // }
 
-
-// exports.createOrder = async (req, res) => {
-//   const orderItemSchema = Joi.object({
-//     foodName: Joi.string().required(),
-//     quantity: Joi.number().integer().min(1).required(),
-//     price: Joi.number().min(0).required(),
-//   })
-
-//   const orderSchema = Joi.object({
-//     customer: Joi.string().required(),
-//     stallId: Joi.string().required(),
-//     orderItems: Joi.array().items(orderItemSchema).required(),
-//     totalAmount: Joi.number().required(),
-//     vat: Joi.number().required(),
-//     orderServedBy: Joi.string().required(),
-//   })
-
-//   try {
-//     await orderSchema.validateAsync(req.body, { abortEarly: false })
-//     const { customer, stallId, orderItems, totalAmount, vat, orderServedBy } = req.body
-
-//     const servedByUser = await User.findById(orderServedBy)
-//     if (!servedByUser) {
-//       return res.status(404).json({ message: 'ServedBy user not found' })
-//     }
-
-//     const customerDetails = await Customer.findById(customer)
-//     if (!customerDetails) {
-//       return res.status(404).json({ message: 'Customer not found' })
-//     }
-
-//     const newOrder = await Order.create({
-//       customer,
-//       stallId,
-//       orderItems,
-//       totalAmount,
-//       vat,
-//       orderServedBy,
-//     })
-
-//     const finalPriceWithVAT = totalAmount + vat
-//     const itemsDescription = orderItems.map((item) => `${item.quantity} x ${item.foodName}`).join(', ')
-//     const message = `Your order has been placed. Total Cost: ${finalPriceWithVAT}, Items: ${itemsDescription}, Served by: ${servedByUser.name}.`
-
-//     const greenwebsms = new URLSearchParams()
-//     greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
-//     greenwebsms.append('to', customerDetails.phone) // Ensure customer model has a 'phone' field
-//     greenwebsms.append('message', message)
-//     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
-
-//     res.status(201).json({ message: 'Order created successfully and SMS sent', order: newOrder })
-//   } catch (error) {
-//     console.error(error)
-//     res.status(400).json({ message: error.message })
-//   }
-// }
+// create a new order with sms order notification to the customer
 
 exports.createOrder = async (req, res) => {
   const orderItemSchema = Joi.object({
