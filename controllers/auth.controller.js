@@ -106,6 +106,7 @@ async function login(req, res) {
     
     // const tokenUser = { userId: storedUser._id, name: storedUser.name, phone: storedUser.phone, role: storedUser.role }
     
+    console.log(storedUser);
     const token = await createJWT({ userId: storedUser._id, name: storedUser.name, phone: storedUser.phone, role: storedUser.role, stallId: storedUser.stallId, motherStall: storedUser.motherStall })
     
     res.status(200).json({

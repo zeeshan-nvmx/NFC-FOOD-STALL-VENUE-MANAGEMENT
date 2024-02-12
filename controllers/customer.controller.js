@@ -28,6 +28,42 @@ exports.createCustomer = async (req, res) => {
   }
 }
 
+exports.getAllCustomersWithDetails = async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1
+  const limit = parseInt(req.query.limit, 10) || 10
+  const skip = (page - 1) * limit
+
+  try {
+    const customers = await Customer.find({}, 'name phone moneyLeft createdBy').populate({ path: 'createdBy', select: 'name' }).skip(skip).limit(limit)
+
+    const total = await Customer.countDocuments({})
+    res.status(200).json({
+      message: 'Customers fetched successfully',
+      data: customers,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    })
+  } catch (error) {
+    return res.status(400).json({ message: error.message })
+  }
+}
+
+exports.getCustomerByPhoneNumber = async (req, res) => {
+  const { phone } = req.params
+
+  try {
+    const customer = await Customer.findOne({ phone }).populate({ path: 'createdBy', select: 'name' }) // Assuming you want to populate this as well
+
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' })
+    }
+
+    res.status(200).json({ message: 'Customer retrieved successfully', data: customer })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
 // Recharge a card
 exports.rechargeCard = async (req, res) => {
 

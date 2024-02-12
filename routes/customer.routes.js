@@ -13,4 +13,7 @@ router.get('/customers/getCustomer/:identifier', authenticateUser, authorizeUser
 // Route to add a new card to an existing customer by phone number
 router.post('/customers/addCard', authenticateUser, authorizeUser('rechargerAdmin', 'recharger'), customerController.addCardToCustomerByPhone)
 
+router.get('/customers', authenticateUser, authorizeUser('rechargerAdmin', 'recharger', 'masterAdmin'), customerController.getAllCustomersWithDetails)
+router.get('/customers/:phone', authenticateUser, authorizeUser('rechargerAdmin', 'recharger', 'masterAdmin'), customerController.getCustomerByPhoneNumber)
+
 module.exports = router
