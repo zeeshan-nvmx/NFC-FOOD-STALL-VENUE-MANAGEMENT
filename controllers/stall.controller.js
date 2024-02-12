@@ -60,6 +60,15 @@ exports.getAllStalls = async (req, res) => {
   }
 }
 
+exports.getStallMenu = async (req, res) => {
+  try {
+    const stalls = await Stall.find({}, 'motherStall menu -_id').sort('motherStall')
+    res.status(200).json({ message: 'Mother stalls and menus retrieved successfully', data: stalls })
+  } catch (error) {
+    res.status(400).json({ message: 'Error retrieving mother stalls and menus', error: error.message })
+  }
+}
+
 exports.getStall = async (req, res) => {
   const { stallId } = req.params;
   try {
@@ -155,3 +164,4 @@ exports.getMenu = async (req, res) => {
     res.status(404).json({ message: 'Stall not found', error: error.message })
   }
 }
+

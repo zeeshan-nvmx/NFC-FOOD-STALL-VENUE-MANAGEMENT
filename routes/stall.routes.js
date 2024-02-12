@@ -6,8 +6,9 @@ const { authenticateUser, authorizeUser } = require('../utils/authorize-authenti
 // Route to create a new stall
 router.post('/stall', authenticateUser, authorizeUser('masterAdmin'), stallController.createStall)
 
-router.get('/stall', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger'), stallController.getAllStalls)
+router.get('/stall/menu', stallController.getStallMenu)
 router.get('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger', 'stallAdmin', 'stallCashier'), stallController.getStall)
+router.get('/stall', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger'), stallController.getAllStalls)
 
 // Route to edit an existing stall
 router.put('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'stallAdmin'), stallController.editStall)
