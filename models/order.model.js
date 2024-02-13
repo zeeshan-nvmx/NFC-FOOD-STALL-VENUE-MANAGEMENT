@@ -58,7 +58,7 @@ const mongoose = require('mongoose')
 const orderItemSchema = new mongoose.Schema(
   {
     foodName: { type: String, required: true },
-    price: { type: Number, required: true },
+    foodPrice: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
   },
   { _id: false }
@@ -70,7 +70,7 @@ const orderSchema = new mongoose.Schema(
     stallId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stall', required: true },
     orderItems: [orderItemSchema],
     totalAmount: { type: Number, required: true },
-    vat: Number,
+    vat: { type: Number, default: 0},
     orderServedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     orderDate: { type: Date, default: Date.now },
   },
