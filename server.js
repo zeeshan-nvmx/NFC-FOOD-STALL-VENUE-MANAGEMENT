@@ -3,7 +3,7 @@ const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
 const helmet = require('helmet')
-
+const { xss } = require('express-xss-sanitizer')
 const mongoSanitize = require('express-mongo-sanitize')
 
 const port = process.env.PORT || 3000
@@ -22,6 +22,7 @@ const { authenticateUser } = require('./utils/authorize-authenticate')
 
 app.use(helmet())
 app.use(cors())
+app.use(xss())
 app.use(mongoSanitize())
 app.use(morgan('short'))
 app.use(express.json())
