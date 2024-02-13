@@ -30,9 +30,9 @@ exports.createStall = async (req, res) => {
     const { motherStall, stallAdmin, stallCashiers, menu } = req.body
 
     const newStall = await Stall.create({ motherStall, stallAdmin, stallCashiers, menu })
-    res.status(201).json({ message: 'Stall created successfully', data: newStall })
+    return res.status(201).json({ message: 'Stall created successfully', data: newStall })
   } catch (error) {
-    res.status(400).json({ message: 'Error creating stall', error: error.message })
+    return res.status(400).json({ message: 'Error creating stall', error: error.message })
   }
 }
 
@@ -54,18 +54,18 @@ exports.getAllStalls = async (req, res) => {
       path: 'stallAdmin',
       select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
     })
-    res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+    return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+    return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
   }
 }
 
 exports.getStallMenu = async (req, res) => {
   try {
     const stalls = await Stall.find({}, 'motherStall menu -_id').sort('motherStall')
-    res.status(200).json({ message: 'Mother stalls and menus retrieved successfully', data: stalls })
+    return res.status(200).json({ message: 'Mother stalls and menus retrieved successfully', data: stalls })
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving mother stalls and menus', error: error.message })
+    return res.status(400).json({ message: 'Error retrieving mother stalls and menus', error: error.message })
   }
 }
 
@@ -76,9 +76,9 @@ exports.getStall = async (req, res) => {
     if (!stall) {
       return res.status(404).json({ message: 'Stall not found' });
     }
-    res.status(200).json({ message: 'Stall retrieved successfully', data: stall });
+    return res.status(200).json({ message: 'Stall retrieved successfully', data: stall });
   } catch (error) {
-    res.status(400).json({ message: 'Error retrieving stall', error: error.message });
+    return res.status(400).json({ message: 'Error retrieving stall', error: error.message });
   }
 }
 
@@ -91,9 +91,9 @@ exports.editStall = async (req, res) => {
     if (!updatedStall) {
       return res.status(404).json({ message: 'Stall not found' })
     }
-    res.status(200).json({ message: 'Stall updated successfully', data: updatedStall })
+    return res.status(200).json({ message: 'Stall updated successfully', data: updatedStall })
   } catch (error) {
-    res.status(400).json({ message: 'Error updating stall', error: error.message })
+    return res.status(400).json({ message: 'Error updating stall', error: error.message })
   }
 }
 
@@ -103,9 +103,9 @@ exports.addMenuItem = async (req, res) => {
   const { foodName, foodPrice, isAvailable } = req.body
   try {
     const updatedStall = await Stall.findOneAndUpdate({ _id: stallId }, { $push: { menu: { foodName, foodPrice, isAvailable } } }, { new: true })
-    res.status(201).json({ message: 'Menu item added successfully', data: updatedStall })
+    return res.status(201).json({ message: 'Menu item added successfully', data: updatedStall })
   } catch (error) {
-    res.status(400).json({ message: 'Error adding menu item', error: error.message })
+    return res.status(400).json({ message: 'Error adding menu item', error: error.message })
   }
 }
 
@@ -124,9 +124,9 @@ exports.updateMenuItem = async (req, res) => {
     menuItem.foodPrice = foodPrice
     menuItem.isAvailable = isAvailable
     await stall.save()
-    res.status(200).json({ message: 'Menu item updated successfully', data: stall })
+    return res.status(200).json({ message: 'Menu item updated successfully', data: stall })
   } catch (error) {
-    res.status(400).json({ message: 'Error updating menu item', error: error.message })
+    return res.status(400).json({ message: 'Error updating menu item', error: error.message })
   }
 }
 
@@ -147,9 +147,9 @@ exports.removeMenuItem = async (req, res) => {
 
     await stall.save()
 
-    res.status(200).json({ message: 'Menu item removed successfully', data: stall })
+    return res.status(200).json({ message: 'Menu item removed successfully', data: stall })
   } catch (error) {
-    res.status(400).json({ message: 'Error removing menu item', error: error.message })
+    return res.status(400).json({ message: 'Error removing menu item', error: error.message })
   }
 }
 
@@ -159,9 +159,9 @@ exports.getMenu = async (req, res) => {
   const { stallId } = req.params
   try {
     const stall = await Stall.findById(stallId)
-    res.status(200).json({ message: 'Menu retrieved successfully', data: stall.menu })
+    return res.status(200).json({ message: 'Menu retrieved successfully', data: stall.menu })
   } catch (error) {
-    res.status(404).json({ message: 'Stall not found', error: error.message })
+    return res.status(404).json({ message: 'Stall not found', error: error.message })
   }
 }
 

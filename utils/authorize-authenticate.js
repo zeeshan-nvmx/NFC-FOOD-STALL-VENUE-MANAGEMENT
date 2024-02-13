@@ -17,7 +17,7 @@ async function authenticateUser(req, res, next) {
     req.user = { userId, name, phone, role, motherStall, stallId }
     next()
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' })
+    return res.status(401).json({ message: 'Invalid token' })
   }
   
 }
@@ -26,7 +26,7 @@ function authorizeUser(...roles){
   return function (req, res, next) {
    
     if (!roles.includes(req.user.role)) {
-      res.status(403).json({ message: `User role: ${req.user.role} is not authorized to access this route` }) 
+     return res.status(403).json({ message: `User role: ${req.user.role} is not authorized to access this route` }) 
     }
     next()
   }
