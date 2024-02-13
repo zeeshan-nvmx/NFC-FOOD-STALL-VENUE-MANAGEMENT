@@ -64,7 +64,7 @@ async function register(req, res) {
     
     const token = await createJWT({ userId: savedUser._id, name: savedUser.name, phone: savedUser.phone, role: savedUser.role, stallId: savedUser.stallId, motherStall: savedUser.motherStall})
 
-    res.status(201).json({
+    return res.status(201).json({
       token,
       message: `New user successfully registered with role: ${role}`,
       user: {
@@ -77,7 +77,7 @@ async function register(req, res) {
     })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -109,7 +109,7 @@ async function login(req, res) {
     console.log(storedUser);
     const token = await createJWT({ userId: storedUser._id, name: storedUser.name, phone: storedUser.phone, role: storedUser.role, stallId: storedUser.stallId, motherStall: storedUser.motherStall })
     
-    res.status(200).json({
+    return res.status(200).json({
       token,
       message: `User: ${storedUser.name} successfully logged in`,
       user: {
@@ -124,12 +124,12 @@ async function login(req, res) {
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
 async function logout(req, res) {
-  res.status(200).json({ message: 'Successfully logged out' })
+  return res.status(200).json({ message: 'Successfully logged out' })
 }
 
 async function requestPasswordReset(req, res) {
@@ -156,10 +156,10 @@ async function requestPasswordReset(req, res) {
     greenwebsms.append('to', phone)
     greenwebsms.append('message', `Your OTP for password reset is ${otp}`)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
-    res.status(200).json({ message: 'OTP sent to your phone' })
+    return res.status(200).json({ message: 'OTP sent to your phone' })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -183,10 +183,10 @@ async function validateOTPAndResetPassword(req, res) {
     }
     const hashedPassword = await hashPassword(newPassword)
     await User.findOneAndUpdate({ phone }, { password: hashedPassword, otp: null, otpExpires: null })
-    res.status(200).json({ message: 'Password has been reset successfully' })
+    return res.status(200).json({ message: 'Password has been reset successfully' })
   } catch (error) {
     console.error(error)
-    res.status(500).json({  message: error.message })
+    return res.status(500).json({  message: error.message })
   }
 }
 

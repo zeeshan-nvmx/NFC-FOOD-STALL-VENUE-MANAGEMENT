@@ -22,9 +22,9 @@ exports.createCustomer = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' })
     }
     const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft, createdBy })
-    res.status(201).json(newCustomer)
+    return res.status(201).json(newCustomer)
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -37,7 +37,7 @@ exports.getAllCustomersWithDetails = async (req, res) => {
     const customers = await Customer.find({}, 'name phone moneyLeft createdBy').populate({ path: 'createdBy', select: 'name' }).skip(skip).limit(limit)
 
     const total = await Customer.countDocuments({})
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Customers fetched successfully',
       data: customers,
       totalPages: Math.ceil(total / limit),
@@ -58,9 +58,9 @@ exports.getCustomerByPhoneNumber = async (req, res) => {
       return res.status(404).json({ message: 'Customer not found' })
     }
 
-    res.status(200).json({ message: 'Customer retrieved successfully', data: customer })
+    return res.status(200).json({ message: 'Customer retrieved successfully', data: customer })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -95,9 +95,9 @@ exports.rechargeCard = async (req, res) => {
       { new: true }
     )
 
-    res.json(updatedCustomer)
+    return res.json(updatedCustomer)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -106,9 +106,9 @@ exports.deleteCustomer = async (req, res) => {
   try {
     const { customerId } = req.params
     await Customer.findByIdAndDelete(customerId)
-    res.json({ message: 'Customer deleted successfully' })
+    return res.json({ message: 'Customer deleted successfully' })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -129,9 +129,9 @@ exports.removeCardUid = async (req, res) => {
       return res.status(404).json({ message: 'Customer not found' })
     }
 
-    res.json(updatedCustomer)
+    return res.json(updatedCustomer)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -145,9 +145,9 @@ exports.getCustomerByCardUidOrPhone = async (req, res) => {
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
-        res.json(customer);
+        return res.json(customer);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 }
 
@@ -158,8 +158,8 @@ exports.addCardToCustomerByPhone = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' })
     }
-    res.json(customer)
+    return res.json(customer)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }

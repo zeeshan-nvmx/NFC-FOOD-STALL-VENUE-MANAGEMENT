@@ -102,10 +102,10 @@ exports.createOrder = async (req, res) => {
     greenwebsms.append('message', message)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 
-    res.status(201).json({ message: 'Order created successfully, SMS sent, and customer balance updated', order: newOrder })
+    return res.status(201).json({ message: 'Order created successfully, SMS sent, and customer balance updated', order: newOrder })
   } catch (error) {
     console.error(error)
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -118,9 +118,9 @@ exports.getOrdersByStall = async (req, res) => {
   try {
     const orders = await Order.find({ stallId }).skip(skip).limit(limit).sort('-orderDate')
     const total = await Order.countDocuments({ stallId })
-    res.json({ orders, total, page, pages: Math.ceil(total / limit) })
+    return res.json({ orders, total, page, pages: Math.ceil(total / limit) })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -151,9 +151,9 @@ exports.getOrder = async (req, res) => {
     const response = order.toObject()
     // Include the customer's _id and name in the response
     response.customer = customer
-    res.json(response)
+    return res.json(response)
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -168,9 +168,9 @@ exports.updateOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
-    res.json({ message: 'Order updated successfully', order })
+    return res.json({ message: 'Order updated successfully', order })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -183,9 +183,9 @@ exports.deleteOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
-    res.json({ message: 'Order deleted successfully' })
+    return res.json({ message: 'Order deleted successfully' })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message })
   }
 }
 
@@ -220,13 +220,13 @@ exports.getOrdersSummaryByStall = async (req, res) => {
       { $limit: limit }, // Limit the number of documents for pagination
     ])
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Orders summary retrieved successfully',
       data: ordersSummary,
       page,
       limit,
     })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
