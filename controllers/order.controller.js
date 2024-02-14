@@ -49,7 +49,7 @@ exports.createOrder = async (req, res) => {
   const orderItemSchema = Joi.object({
     foodName: Joi.string().required(),
     quantity: Joi.number().integer().min(1).required(),
-    price: Joi.number().min(0).required(),
+    foodPrice: Joi.number().min(0).required(),
   })
 
   const orderSchema = Joi.object({
