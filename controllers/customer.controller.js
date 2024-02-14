@@ -15,13 +15,15 @@ exports.createCustomer = async (req, res) => {
 
   try {
     await schema.validateAsync(req.body, { abortEarly: false })
-    const { name, phone, cardUid, moneyLeft, createdBy } = req.body
+    const money = req.body.moneyLeft
+    const convertedMoney = Number(money)
+    const { name, phone, cardUid, createdBy } = req.body
     // Ensure createdBy (recharger or recharger admin) exists and has the right role
     const creator = await User.findById(createdBy)
     if (!creator || (creator.role !== 'recharger' && creator.role !== 'rechargerAdmin')) {
       return res.status(403).json({ message: 'Unauthorized' })
     }
-    const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft, createdBy })
+    const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft: convertedMoney, createdBy })
     return res.status(201).json(newCustomer)
   } catch (error) {
     return res.status(400).json({ message: error.message })
@@ -75,14 +77,16 @@ exports.rechargeCard = async (req, res) => {
 
   try {
     await schema.validateAsync(req.body, { abortEarly: false })
-    const { cardUid, amount, rechargerId } = req.body
+    const money = req.body.amount
+    const convertedMoney = Number(money)
+    const { cardUid, rechargerId } = req.body
     const customer = await Customer.findOne({ cardUid })
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' })
     }
 
     // Prevent negative moneyLeft
-    const updatedMoneyLeft = Math.max(0, customer.moneyLeft + amount)
+    const updatedMoneyLeft = Math.max(0, customer.moneyLeft + convertedMoney)
     const rechargerName = (await User.findById(rechargerId)).name
 
     // Update customer
@@ -90,7 +94,7 @@ exports.rechargeCard = async (req, res) => {
       customer._id,
       {
         $set: { moneyLeft: updatedMoneyLeft },
-        $push: { rechargeHistory: { rechargerName, rechargerId, amount, date: new Date() } },
+        $push: { rechargeHistory: { rechargerName, rechargerId, amount: convertedMoney, date: new Date() } },
       },
       { new: true }
     )
