@@ -2,6 +2,7 @@ const Order = require('../models/order.model')
 const Customer = require('../models/customer.model')
 const User = require('../models/auth.model')
 const axios = require('axios')
+const mongoose = require('mongoose')
 const Joi = require('joi')
 
 
@@ -197,7 +198,7 @@ exports.getOrdersSummaryByStall = async (req, res) => {
 
   try {
     const ordersSummary = await Order.aggregate([
-      { $match: { stall: mongoose.Types.ObjectId(stallId) } },
+      { $match: { stall: new mongoose.Types.ObjectId(stallId) } },
       {
         $lookup: {
           from: 'users', // Assuming 'users' is the collection name for User model

@@ -7,7 +7,7 @@ const { authenticateUser, authorizeUser } = require('../utils/authorize-authenti
 router.post('/orders', authenticateUser, authorizeUser('stallAdmin', 'stallCashier'), orderController.createOrder)
 
 // Route to retrieve all orders for a specific stall with pagination
-router.get('/stalls/:stallId/orders', authenticateUser, authorizeUser('stallAdmin', 'stallCashier', 'masterAdmin'), orderController.getOrdersByStall)
+router.get('/stall/:stallId/orders', authenticateUser, authorizeUser('stallAdmin', 'stallCashier', 'masterAdmin'), orderController.getOrdersByStall)
 
 // Route to get a single order detail
 router.get('/orders/:orderId', authenticateUser, authorizeUser('stallAdmin', 'stallCashier', 'masterAdmin'), orderController.getOrder)
@@ -19,6 +19,6 @@ router.put('/orders/:orderId', authenticateUser, authorizeUser('stallAdmin', 'st
 router.delete('/orders/:orderId', authenticateUser, authorizeUser('stallAdmin', 'stallCashier'), orderController.deleteOrder)
 
 // Route to get orders summary by stall with pagination
-router.get('/stalls/:stallId/ordersSummary', authenticateUser, authorizeUser('stallAdmin', 'stallCashier', 'masterAdmin'), orderController.getOrdersSummaryByStall)
+router.get('/stall/:stallId/ordersSummary', authenticateUser, authorizeUser('stallAdmin', 'stallCashier', 'masterAdmin'), orderController.getOrdersSummaryByStall)
 
 module.exports = router
