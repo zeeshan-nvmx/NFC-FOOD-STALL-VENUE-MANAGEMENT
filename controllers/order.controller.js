@@ -1,8 +1,8 @@
 const Order = require('../models/order.model')
 const Customer = require('../models/customer.model')
 const User = require('../models/auth.model')
-const axios = require('axios')
 const mongoose = require('mongoose')
+const axios = require('axios')
 const Joi = require('joi')
 
 
@@ -110,20 +110,20 @@ exports.createOrder = async (req, res) => {
   }
 }
 
-exports.getOrdersByStall = async (req, res) => {
-  const { stallId } = req.params
-  const page = parseInt(req.query.page) || 1
-  const limit = parseInt(req.query.limit) || 10
-  const skip = (page - 1) * limit
+// exports.getOrdersByStall = async (req, res) => {
+//   const { stallId } = req.params
+//   const page = parseInt(req.query.page) || 1
+//   const limit = parseInt(req.query.limit) || 10
+//   const skip = (page - 1) * limit
 
-  try {
-    const orders = await Order.find({ stallId }).skip(skip).limit(limit).sort('-orderDate')
-    const total = await Order.countDocuments({ stallId })
-    return res.json({ orders, total, page, pages: Math.ceil(total / limit) })
-  } catch (error) {
-    return res.status(400).json({ message: error.message })
-  }
-}
+//   try {
+//     const orders = await Order.find({ stallId }).skip(skip).limit(limit).sort('-orderDate')
+//     const total = await Order.countDocuments({ stallId })
+//     return res.json({ orders, total, page, pages: Math.ceil(total / limit) })
+//   } catch (error) {
+//     return res.status(400).json({ message: error.message })
+//   }
+// }
 
 // Get a single order detail
 // exports.getOrder = async (req, res) => {
@@ -139,6 +139,36 @@ exports.getOrdersByStall = async (req, res) => {
 //   }
 // }
 
+
+exports.getOrdersByStall = async (req, res) => {
+  const { stallId } = req.params
+  const page = parseInt(req.query.page) || 1
+  const limit = parseInt(req.query.limit) || 10
+  const skip = (page - 1) * limit
+
+  try {
+    const orders = await Order.find({ stallId })
+      .populate({
+        path: 'customer',
+        select: 'name phone', // Only fetch the name and phone fields from the Customer document
+      })
+      .skip(skip)
+      .limit(limit)
+      .sort('-orderDate')
+      .exec() // Executing the query
+
+    const total = await Order.countDocuments({ stallId })
+
+    return res.json({
+      orders,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    })
+  } catch (error) {
+    return res.status(400).json({ message: error.message })
+  }
+}
 
 exports.getOrder = async (req, res) => {
   const { orderId } = req.params
@@ -198,7 +228,7 @@ exports.getOrdersSummaryByStall = async (req, res) => {
 
   try {
     const ordersSummary = await Order.aggregate([
-      { $match: { stall: new mongoose.Types.ObjectId(stallId) } },
+      { $match: { stallId : stallId } },
       {
         $lookup: {
           from: 'users', // Assuming 'users' is the collection name for User model
