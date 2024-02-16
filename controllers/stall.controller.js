@@ -97,6 +97,23 @@ exports.editStall = async (req, res) => {
   }
 }
 
+// Delete a stall
+exports.deleteStall = async (req, res) => {
+  const { stallId } = req.params;
+
+  try {
+    const deletedStall = await Stall.findByIdAndDelete(stallId);
+
+    if (!deletedStall) {
+      return res.status(404).json({ message: 'Stall not found' });
+    }
+
+    return res.status(200).json({ message: 'Stall deleted successfully', deletedStall });
+  } catch (error) {
+    return res.status(400).json({ message: 'Error deleting stall', error: error.message });
+  }
+}
+
 // Add a new menu item to a stall
 exports.addMenuItem = async (req, res) => {
   const { stallId } = req.params

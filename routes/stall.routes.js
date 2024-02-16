@@ -10,6 +10,9 @@ router.get('/stall/menu', stallController.getStallMenu)
 router.get('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger', 'stallAdmin', 'stallCashier'), stallController.getStall)
 router.get('/stall', authenticateUser, authorizeUser('masterAdmin', 'rechargerAdmin', 'recharger'), stallController.getAllStalls)
 
+// Route to delete a stall
+router.delete('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin'), stallController.deleteStall)
+
 // Route to edit an existing stall
 router.put('/stall/:stallId', authenticateUser, authorizeUser('masterAdmin', 'stallAdmin'), stallController.editStall)
 

@@ -26,7 +26,7 @@ async function register(req, res) {
     const userExists = await User.findOne({ phone })
     
     if (userExists) {
-      return res.status(400).json({ message: 'User with this phone already exists' })
+      return res.status(400).json({ message: 'User with this phone already exists, please use a new phone number.' })
     }
     
     const allowedCreations = {
