@@ -26,7 +26,7 @@ exports.createCustomer = async (req, res) => {
     }
     const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft: convertedMoney, createdBy })
 
-    const message = `Hello, ${newCustomer.name}. Your customer account has been successfully created and you have a current balance of ${moneyLeft} taka`
+    const message = `Hello, ${newCustomer.name}. Your customer account has been successfully created and you have a current balance of ${newCustomer.moneyLeft} taka`
     const greenwebsms = new URLSearchParams()
     greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
     greenwebsms.append('to', newCustomer.phone)
