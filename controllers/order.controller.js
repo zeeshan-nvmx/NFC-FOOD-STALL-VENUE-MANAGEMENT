@@ -76,6 +76,8 @@ exports.createOrder = async (req, res) => {
       return res.status(404).json({ message: 'Customer not found' })
     }
 
+    const prevBalance = customerDetails.moneyLeft
+
     // Deduct the final total amount from the customer's balance
     const finalPriceWithVAT = totalAmount /* + vat */
     if (customerDetails.moneyLeft < finalPriceWithVAT) {
@@ -83,7 +85,7 @@ exports.createOrder = async (req, res) => {
     }
 
     customerDetails.moneyLeft -= finalPriceWithVAT // Deduct the total cost from the customer's balance
-    await customerDetails.save() // Save the updated customer details
+    const updatedCustomer = await customerDetails.save() // Save the updated customer details
 
     const newOrder = await Order.create({
       customer,
@@ -95,11 +97,11 @@ exports.createOrder = async (req, res) => {
     })
 
     const itemsDescription = orderItems.map((item) => `${item.quantity} x ${item.foodName}`).join(', ')
-    const message = `Your order has been placed. Total Cost: ${finalPriceWithVAT}, Items: ${itemsDescription}, Served by: ${servedByUser.name}.`
+    const message = `Order confirmed. Amount: ${finalPriceWithVAT}, Items: ${itemsDescription}, Balance before order: ${prevBalance}, Current Balance: ${updatedCustomer.moneyLeft} Served by: ${servedByUser.name}.`
 
     const greenwebsms = new URLSearchParams()
     greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
-    greenwebsms.append('to', customerDetails.phone) // Assuming the 'phone' field exists
+    greenwebsms.append('to', customerDetails.phone) 
     greenwebsms.append('message', message)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 

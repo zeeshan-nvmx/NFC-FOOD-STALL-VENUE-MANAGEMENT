@@ -1,5 +1,6 @@
 const Customer = require('../models/customer.model')
 const User = require('../models/auth.model')
+const axios = require('axios')
 const Joi = require('joi')
 
 // Create a new customer with a card UID
@@ -21,9 +22,17 @@ exports.createCustomer = async (req, res) => {
     // Ensure createdBy (recharger or recharger admin) exists and has the right role
     const creator = await User.findById(createdBy)
     if (!creator || (creator.role !== 'recharger' && creator.role !== 'rechargerAdmin')) {
-      return res.status(403).json({ message: 'Unauthorized' })
+      return res.status(403).json({ message: 'Unauthorized to create customers' })
     }
     const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft: convertedMoney, createdBy })
+
+    const message = `Hello, ${newCustomer.name}. Your customer account has been successfully created and you have a current balance of ${moneyLeft} taka`
+    const greenwebsms = new URLSearchParams()
+    greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
+    greenwebsms.append('to', newCustomer.phone)
+    greenwebsms.append('message', message)
+    await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
+
     return res.status(201).json(newCustomer)
   } catch (error) {
     return res.status(400).json({ message: error.message })
@@ -82,8 +91,10 @@ exports.rechargeCard = async (req, res) => {
     const { cardUid, rechargerId } = req.body
     const customer = await Customer.findOne({ cardUid })
     if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' })
+      return res.status(404).json({ message: 'This card doesnt belong to a customer' })
     }
+
+    const prevMoneyLeft = customer.moneyLeft
 
     // Prevent negative moneyLeft
     const updatedMoneyLeft = Math.max(0, customer.moneyLeft + convertedMoney)
@@ -98,6 +109,14 @@ exports.rechargeCard = async (req, res) => {
       },
       { new: true }
     )
+
+    const message = `Your card recharge was successful, you had a balance of ${prevMoneyLeft} previously. Your new balance is ${updatedCustomer.moneyLeft}`
+
+    const greenwebsms = new URLSearchParams()
+    greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
+    greenwebsms.append('to', updatedCustomer.phone)
+    greenwebsms.append('message', message)
+    await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 
     return res.json(updatedCustomer)
   } catch (error) {
