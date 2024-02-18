@@ -27,9 +27,12 @@ const stallSchema = new mongoose.Schema(
         },
         isAvailable: {
           type: Boolean,
-          required: true,
           default: true, // By default, menu items are available
         },
+        currentStock: {
+          type: Number,
+          default: 0,
+        }
       },
     ],
   },

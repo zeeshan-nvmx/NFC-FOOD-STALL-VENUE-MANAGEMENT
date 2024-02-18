@@ -8,9 +8,10 @@ exports.createStall = async (req, res) => {
     foodName: Joi.string().required(),
     foodPrice: Joi.number().required(),
     isAvailable: Joi.boolean().required(),
+    currentStock: Joi.number().required()
   })
 
-  // Define Joi validation for the stall
+  
   const stallValidationSchema = Joi.object({
     motherStall: Joi.string().required(),
     stallAdmin: Joi.string().pattern(new RegExp('^[0-9a-fA-F]{24}$')),
@@ -23,7 +24,6 @@ exports.createStall = async (req, res) => {
   })
 
 
-  
   try {
 
     await stallValidationSchema.validateAsync(req.body, { abortEarly: false })
@@ -32,21 +32,10 @@ exports.createStall = async (req, res) => {
     const newStall = await Stall.create({ motherStall, stallAdmin, stallCashiers, menu })
     return res.status(201).json({ message: 'Stall created successfully', data: newStall })
   } catch (error) {
+    console.log(error)
     return res.status(400).json({ message: 'Error creating stall', error: error.message })
   }
 }
-
-// Get a list of all stalls alphabetically
-// exports.getAllStalls = async (req, res) => {
-//   try {
-//     const stalls = await Stall.find({}, '_id motherStall name stallAdmin').sort('motherStall');
-//     res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls });
-//   } catch (error) {
-//     res.status(400).json({ message: 'Error retrieving stalls', error: error.message });
-//   }
-// };
-
-// Get a single stall with all its data
 
 exports.getAllStalls = async (req, res) => {
   try {
@@ -117,9 +106,9 @@ exports.deleteStall = async (req, res) => {
 // Add a new menu item to a stall
 exports.addMenuItem = async (req, res) => {
   const { stallId } = req.params
-  const { foodName, foodPrice, isAvailable } = req.body
+  const { foodName, foodPrice, isAvailable, currentStock } = req.body
   try {
-    const updatedStall = await Stall.findOneAndUpdate({ _id: stallId }, { $push: { menu: { foodName, foodPrice, isAvailable } } }, { new: true })
+    const updatedStall = await Stall.findOneAndUpdate({ _id: stallId }, { $push: { menu: { foodName, foodPrice, isAvailable, currentStock } } }, { new: true })
     return res.status(201).json({ message: 'Menu item added successfully', data: updatedStall })
   } catch (error) {
     return res.status(400).json({ message: 'Error adding menu item', error: error.message })
@@ -129,7 +118,7 @@ exports.addMenuItem = async (req, res) => {
 // Update an existing menu item
 exports.updateMenuItem = async (req, res) => {
   const { stallId, menuId } = req.params
-  const { foodName, foodPrice, isAvailable } = req.body
+  const { foodName, foodPrice, isAvailable, currentStock } = req.body
 
   try {
     const stall = await Stall.findById(stallId)
@@ -140,6 +129,7 @@ exports.updateMenuItem = async (req, res) => {
     menuItem.foodName = foodName
     menuItem.foodPrice = foodPrice
     menuItem.isAvailable = isAvailable
+    menuItem.currentStock = currentStock
     await stall.save()
     return res.status(200).json({ message: 'Menu item updated successfully', data: stall })
   } catch (error) {
