@@ -149,7 +149,7 @@ exports.removeCardUid = async (req, res) => {
     )
 
     if (!updatedCustomer) {
-      return res.status(404).json({ message: 'Customer not found' })
+      return res.status(404).json({ message: 'This card doesnt belong to a customer' })
     }
 
     return res.json(updatedCustomer)
