@@ -10,7 +10,7 @@ exports.createCustomer = async (req, res) => {
     name: Joi.string(),
     phone: Joi.string().length(11).required(),
     cardUid: Joi.string().required(),
-    moneyLeft: Joi.number().min(0),
+    moneyLeft: Joi.number(),
     createdBy: Joi.string().required(),
   })
 
