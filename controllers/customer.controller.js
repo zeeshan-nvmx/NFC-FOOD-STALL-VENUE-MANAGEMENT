@@ -10,21 +10,19 @@ exports.createCustomer = async (req, res) => {
     name: Joi.string(),
     phone: Joi.string().length(11).required(),
     cardUid: Joi.string().required(),
-    moneyLeft: Joi.number(),
     createdBy: Joi.string().required(),
   })
 
   try {
     await schema.validateAsync(req.body, { abortEarly: false })
-    const money = req.body.moneyLeft
-    const convertedMoney = Number(money)
+    
     const { name, phone, cardUid, createdBy } = req.body
     // Ensure createdBy (recharger or recharger admin) exists and has the right role
     const creator = await User.findById(createdBy)
     if (!creator || (creator.role !== 'recharger' && creator.role !== 'rechargerAdmin')) {
       return res.status(403).json({ message: 'Unauthorized to create customers' })
     }
-    const newCustomer = await Customer.create({ name, phone, cardUid, moneyLeft: convertedMoney, createdBy })
+    const newCustomer = await Customer.create({ name, phone, cardUid, createdBy })
 
     const message = `Hello, ${newCustomer.name}. Your customer account has been successfully created and you have a current balance of ${newCustomer.moneyLeft} taka`
     const greenwebsms = new URLSearchParams()
