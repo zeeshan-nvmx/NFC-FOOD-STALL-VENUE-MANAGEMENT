@@ -1,4 +1,5 @@
 const Stall = require('../models/stall.model')
+const Order = require('../models/order.model')
 const Joi = require('joi')
 
 // Create a new stall
@@ -41,13 +42,60 @@ exports.getAllStalls = async (req, res) => {
   try {
     const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
       path: 'stallAdmin',
-      select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
+      select: '_id name phone', // Select only the _id, name, and phone of the stallAdmin
     })
-    return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Set time to start of the day
+
+    const modifiedStalls = [] // Array to store stalls with calculations
+
+    for (const stall of stalls) {
+      // Fetch today's orders for the stall
+      const todayStallOrders = await Order.find({
+        stallId: stall._id,
+        orderDate: { $gte: today },
+      })
+
+      // Fetch lifetime orders for the stall
+      const lifetimeStallOrders = await Order.find({
+        stallId: stall._id,
+      })
+
+      let todayTotalOrderValue = 0
+      let todayOrderCount = 0
+      let lifetimeTotalOrderValue = 0
+      let lifetimeOrderCount = 0
+
+      // Calculate today's totals
+      todayStallOrders.forEach((order) => {
+        todayTotalOrderValue += order.totalAmount
+        todayOrderCount++
+      })
+
+      // Calculate lifetime totals
+      lifetimeStallOrders.forEach((order) => {
+        lifetimeTotalOrderValue += order.totalAmount
+        lifetimeOrderCount++
+      })
+
+      modifiedStalls.push({
+        ...stall.toObject(),
+        todayTotalOrderValue,
+        todayOrderCount,
+        lifetimeTotalOrderValue,
+        lifetimeOrderCount,
+      })
+    }
+
+    return res.status(200).json({ message: 'Stalls retrieved successfully', data: modifiedStalls })
   } catch (error) {
     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
   }
 }
+
+
+
 
 exports.getStallMenu = async (req, res) => {
   try {
@@ -172,3 +220,53 @@ exports.getMenu = async (req, res) => {
   }
 }
 
+// exports.getAllStalls = async (req, res) => {
+//   try {
+//     const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
+//       path: 'stallAdmin',
+//       select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
+//     })
+//     return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+//   } catch (error) {
+//     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+//   }
+// }
+
+// exports.getAllStalls = async (req, res) => {
+//   try {
+//     const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
+//       path: 'stallAdmin',
+//       select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
+//     })
+
+//     const today = new Date()
+//     today.setHours(0, 0, 0, 0) // Set time to start of the day
+
+//     const modifiedStalls = [] // Array to store stalls with calculations
+
+//     for (const stall of stalls) {
+//       const stallOrders = await Order.find({
+//         stallId: stall._id,
+//         orderDate: { $gte: today },
+//       })
+
+//       let totalOrderValue = 0
+//       let orderCount = 0
+
+//       for (const order of stallOrders) {
+//         totalOrderValue += order.totalAmount
+//         orderCount++
+//       }
+
+//       modifiedStalls.push({
+//         ...stall.toObject(),
+//         totalOrderValue,
+//         orderCount,
+//       })
+//     }
+
+//     return res.status(200).json({ message: 'Stalls retrieved successfully', data: modifiedStalls })
+//   } catch (error) {
+//     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+//   }
+// }

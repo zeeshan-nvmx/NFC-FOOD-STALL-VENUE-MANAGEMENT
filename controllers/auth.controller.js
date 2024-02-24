@@ -77,7 +77,7 @@ async function register(req, res) {
     })
   } catch (error) {
     console.error(error)
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'User registration wasn\'t successful', error: error.message})
   }
 }
 
@@ -123,7 +123,7 @@ async function login(req, res) {
 
   } catch (error) {
     console.error(error)
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: "user login unsuccessful", error: error.message })
   }
 }
 
@@ -158,7 +158,7 @@ async function requestPasswordReset(req, res) {
     return res.status(200).json({ message: 'OTP sent to your phone' })
   } catch (error) {
     console.error(error)
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'otp didn\'t match, or otp is invalid', error: error.message })
   }
 }
 
@@ -185,7 +185,7 @@ async function validateOTPAndResetPassword(req, res) {
     return res.status(200).json({ message: 'Password has been reset successfully' })
   } catch (error) {
     console.error(error)
-    return res.status(500).json({  message: error.message })
+    return res.status(500).json({ message: 'user password reset was unsuccessful', error: error.message })
   }
 }
 
