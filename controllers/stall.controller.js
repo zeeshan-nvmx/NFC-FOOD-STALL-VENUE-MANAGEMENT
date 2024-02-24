@@ -1,6 +1,7 @@
 const Stall = require('../models/stall.model')
 const Order = require('../models/order.model')
 const Joi = require('joi')
+const mongoose = require('mongoose')
 
 // Create a new stall
 exports.createStall = async (req, res) => {
@@ -38,63 +39,94 @@ exports.createStall = async (req, res) => {
   }
 }
 
+// getAllStalls implemented with mongodb aggregation pipeline
 exports.getAllStalls = async (req, res) => {
   try {
-    const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
-      path: 'stallAdmin',
-      select: '_id name phone', // Select only the _id, name, and phone of the stallAdmin
-    })
-
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Set time to start of the day
 
-    const modifiedStalls = [] // Array to store stalls with calculations
+    const stalls = await Stall.aggregate([
+      {
+        $sort: { motherStall: 1 },
+      },
+      {
+        $lookup: {
+          from: 'users', // Assuming the stallAdmin references a collection named "users"
+          localField: 'stallAdmin',
+          foreignField: '_id',
+          as: 'stallAdminDetails',
+        },
+      },
+      {
+        $unwind: '$stallAdminDetails',
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { stallId: '$_id', today: today },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$stallId', '$$stallId'] }, { $gte: ['$orderDate', '$$today'] }],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                todayTotalOrderValue: { $sum: '$totalAmount' },
+                todayOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'todayOrders',
+        },
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          localField: '_id',
+          foreignField: 'stallId',
+          pipeline: [
+            {
+              $group: {
+                _id: null,
+                lifetimeTotalOrderValue: { $sum: '$totalAmount' },
+                lifetimeOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'lifetimeOrders',
+        },
+      },
+      {
+        $addFields: {
+          todayTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayTotalOrderValue', 0] }, 0] },
+          todayOrderCount: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayOrderCount', 0] }, 0] },
+          lifetimeTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeTotalOrderValue', 0] }, 0] },
+          lifetimeOrderCount: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeOrderCount', 0] }, 0] },
+        },
+      },
+      {
+        $project: {
+          motherStall: 1,
+          'stallAdminDetails._id': 1,
+          'stallAdminDetails.name': 1,
+          'stallAdminDetails.phone': 1,
+          todayTotalOrderValue: 1,
+          todayOrderCount: 1,
+          lifetimeTotalOrderValue: 1,
+          lifetimeOrderCount: 1,
+        },
+      },
+    ])
 
-    for (const stall of stalls) {
-      // Fetch today's orders for the stall
-      const todayStallOrders = await Order.find({
-        stallId: stall._id,
-        orderDate: { $gte: today },
-      })
-
-      // Fetch lifetime orders for the stall
-      const lifetimeStallOrders = await Order.find({
-        stallId: stall._id,
-      })
-
-      let todayTotalOrderValue = 0
-      let todayOrderCount = 0
-      let lifetimeTotalOrderValue = 0
-      let lifetimeOrderCount = 0
-
-      // Calculate today's totals
-      todayStallOrders.forEach((order) => {
-        todayTotalOrderValue += order.totalAmount
-        todayOrderCount++
-      })
-
-      // Calculate lifetime totals
-      lifetimeStallOrders.forEach((order) => {
-        lifetimeTotalOrderValue += order.totalAmount
-        lifetimeOrderCount++
-      })
-
-      modifiedStalls.push({
-        ...stall.toObject(),
-        todayTotalOrderValue,
-        todayOrderCount,
-        lifetimeTotalOrderValue,
-        lifetimeOrderCount,
-      })
-    }
-
-    return res.status(200).json({ message: 'Stalls retrieved successfully', data: modifiedStalls })
+    return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
   } catch (error) {
     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
   }
 }
-
-
 
 
 exports.getStallMenu = async (req, res) => {
@@ -106,64 +138,89 @@ exports.getStallMenu = async (req, res) => {
   }
 }
 
-// exports.getStall = async (req, res) => {
-//   const { stallId } = req.params;
-//   try {
-//     const stall = await Stall.findById(stallId);
-//     if (!stall) {
-//       return res.status(404).json({ message: 'Stall not found' });
-//     }
-//     return res.status(200).json({ message: 'Stall retrieved successfully', data: stall });
-//   } catch (error) {
-//     return res.status(400).json({ message: 'Error retrieving stall', error: error.message });
-//   }
-// }
-
-// Edit a stall
-
 exports.getStall = async (req, res) => {
   const { stallId } = req.params
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   try {
-    const stall = await Stall.findById(stallId)
-    if (!stall) {
+    const results = await Stall.aggregate([
+      // Match the specific stall by ID
+      { $match: { _id: new mongoose.Types.ObjectId(stallId) } },
+      // Lookup today's orders
+      {
+        $lookup: {
+          from: 'orders',
+          let: { stallId: '$_id', today: today },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$stallId', '$$stallId'] }, { $gte: ['$orderDate', '$$today'] }],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                todayTotalOrderValue: { $sum: '$totalAmount' },
+                todayOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'todayOrders',
+        },
+      },
+      // Lookup all time orders
+      {
+        $lookup: {
+          from: 'orders',
+          let: { stallId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$stallId', '$$stallId'],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                lifetimeTotalOrderValue: { $sum: '$totalAmount' },
+                lifetimeOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'lifetimeOrders',
+        },
+      },
+      // Project the final output
+      {
+        $project: {
+          stallInfo: '$$ROOT',
+          todayTotalOrderValue: { $arrayElemAt: ['$todayOrders.todayTotalOrderValue', 0] },
+          todayOrderCount: { $arrayElemAt: ['$todayOrders.todayOrderCount', 0] },
+          lifetimeTotalOrderValue: { $arrayElemAt: ['$lifetimeOrders.lifetimeTotalOrderValue', 0] },
+          lifetimeOrderCount: { $arrayElemAt: ['$lifetimeOrders.lifetimeOrderCount', 0] },
+        },
+      },
+    ])
+
+    if (results.length === 0) {
       return res.status(404).json({ message: 'Stall not found' })
     }
 
-    // Identify today's date and set it to start of the day
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    // Calculate today's total order value and count
-    const todayOrders = await Order.find({
-      stallId: stallId,
-      orderDate: { $gte: today },
-    })
-
-    let todayTotalOrderValue = 0
-    let todayOrderCount = todayOrders.length
-
-    todayOrders.forEach((order) => {
-      todayTotalOrderValue += order.totalAmount
-    })
-
-    // Calculate lifetime total order value and count
-    const lifetimeOrders = await Order.find({ stallId: stallId })
-
-    let lifetimeTotalOrderValue = 0
-    let lifetimeOrderCount = lifetimeOrders.length
-
-    lifetimeOrders.forEach((order) => {
-      lifetimeTotalOrderValue += order.totalAmount
-    })
+    const [result] = results // Since we're only fetching one stall, we can directly take the first element
 
     return res.status(200).json({
       message: 'Stall retrieved successfully',
       data: {
-        ...stall.toObject(),
-        todayTotalOrderValue,
-        todayOrderCount,
-        lifetimeTotalOrderValue,
-        lifetimeOrderCount,
+        ...result.stallInfo,
+        todayTotalOrderValue: result.todayTotalOrderValue || 0,
+        todayOrderCount: result.todayOrderCount || 0,
+        lifetimeTotalOrderValue: result.lifetimeTotalOrderValue || 0,
+        lifetimeOrderCount: result.lifetimeOrderCount || 0,
       },
     })
   } catch (error) {
@@ -172,6 +229,8 @@ exports.getStall = async (req, res) => {
 }
 
 
+
+// Edit a stall
 exports.editStall = async (req, res) => {
   const { stallId } = req.params
   const updates = req.body
@@ -272,17 +331,62 @@ exports.getMenu = async (req, res) => {
   }
 }
 
-// exports.getAllStalls = async (req, res) => {
+// exports.getStall = async (req, res) => {
+//   const { stallId } = req.params
 //   try {
-//     const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
-//       path: 'stallAdmin',
-//       select: '_id name phone', // Select only the _id,name and phone of the stallAdmin
+//     const stall = await Stall.findById(stallId)
+//     if (!stall) {
+//       return res.status(404).json({ message: 'Stall not found' })
+//     }
+
+//     // Identify today's date and set it to start of the day
+//     const today = new Date()
+//     today.setHours(0, 0, 0, 0)
+
+//     // Calculate today's total order value and count
+//     const todayOrders = await Order.find({
+//       stallId: stallId,
+//       orderDate: { $gte: today },
 //     })
-//     return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+
+//     let todayTotalOrderValue = 0
+//     let todayOrderCount = todayOrders.length
+
+//     todayOrders.forEach((order) => {
+//       todayTotalOrderValue += order.totalAmount
+//     })
+
+//     // Calculate lifetime total order value and count
+//     const lifetimeOrders = await Order.find({ stallId: stallId })
+
+//     let lifetimeTotalOrderValue = 0
+//     let lifetimeOrderCount = lifetimeOrders.length
+
+//     lifetimeOrders.forEach((order) => {
+//       lifetimeTotalOrderValue += order.totalAmount
+//     })
+
+//     return res.status(200).json({
+//       message: 'Stall retrieved successfully',
+//       data: {
+//         ...stall.toObject(),
+//         todayTotalOrderValue,
+//         todayOrderCount,
+//         lifetimeTotalOrderValue,
+//         lifetimeOrderCount,
+//       },
+//     })
 //   } catch (error) {
-//     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+//     return res.status(400).json({ message: 'Error retrieving stall', error: error.message })
 //   }
 // }
+
+
+
+
+
+
+// Retrieve all stalls with todays total order value and count
 
 // exports.getAllStalls = async (req, res) => {
 //   try {
@@ -314,6 +418,67 @@ exports.getMenu = async (req, res) => {
 //         ...stall.toObject(),
 //         totalOrderValue,
 //         orderCount,
+//       })
+//     }
+
+//     return res.status(200).json({ message: 'Stalls retrieved successfully', data: modifiedStalls })
+//   } catch (error) {
+//     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+//   }
+// }
+
+
+
+
+
+//get all stall implemented with calculation done at the api layer ( slow )
+// exports.getAllStalls = async (req, res) => {
+//   try {
+//     const stalls = await Stall.find({}, '_id motherStall stallAdmin').sort('motherStall').populate({
+//       path: 'stallAdmin',
+//       select: '_id name phone', // Select only the _id, name, and phone of the stallAdmin
+//     })
+
+//     const today = new Date()
+//     today.setHours(0, 0, 0, 0) // Set time to start of the day
+
+//     const modifiedStalls = [] // Array to store stalls with calculations
+
+//     for (const stall of stalls) {
+//       // Fetch today's orders for the stall
+//       const todayStallOrders = await Order.find({
+//         stallId: stall._id,
+//         orderDate: { $gte: today },
+//       })
+
+//       // Fetch lifetime orders for the stall
+//       const lifetimeStallOrders = await Order.find({
+//         stallId: stall._id,
+//       })
+
+//       let todayTotalOrderValue = 0
+//       let todayOrderCount = 0
+//       let lifetimeTotalOrderValue = 0
+//       let lifetimeOrderCount = 0
+
+//       // Calculate today's totals
+//       todayStallOrders.forEach((order) => {
+//         todayTotalOrderValue += order.totalAmount
+//         todayOrderCount++
+//       })
+
+//       // Calculate lifetime totals
+//       lifetimeStallOrders.forEach((order) => {
+//         lifetimeTotalOrderValue += order.totalAmount
+//         lifetimeOrderCount++
+//       })
+
+//       modifiedStalls.push({
+//         ...stall.toObject(),
+//         todayTotalOrderValue,
+//         todayOrderCount,
+//         lifetimeTotalOrderValue,
+//         lifetimeOrderCount,
 //       })
 //     }
 

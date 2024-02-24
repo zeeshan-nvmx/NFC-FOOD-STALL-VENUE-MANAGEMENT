@@ -74,7 +74,7 @@ exports.getOrdersByStall = async (req, res) => {
 
     const total = await Order.countDocuments(queryCondition)
 
-    return res.json({
+    return res.status(200).json({
       orders,
       total,
       page,
@@ -98,7 +98,7 @@ exports.getOrder = async (req, res) => {
     const response = order.toObject()
     // Include the customer's _id and name in the response
     response.customer = customer
-    return res.json(response)
+    return res.status(200).json({ message: "Order fetched successfully", data: response })
   } catch (error) {
     return res.status(400).json({ message: 'error fetching order', error: error.message })
   }
@@ -115,7 +115,7 @@ exports.updateOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
-    return res.json({ message: 'Order updated successfully', order })
+    return res.status(201).json({ message: 'Order updated successfully', order })
   } catch (error) {
     return res.status(400).json({ message: 'error updating order', error: error.message })
   }
@@ -130,7 +130,7 @@ exports.deleteOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
-    return res.json({ message: 'Order deleted successfully' })
+    return res.status(200).json({ message: 'Order deleted successfully' })
   } catch (error) {
     return res.status(500).json({ message: 'error deleting order', error: error.message })
   }
@@ -259,7 +259,7 @@ exports.createOrder = async (req, res) => {
     return res.status(201).json({ message: 'Order was created successfully, SMS sent, and customer balance was updated', order: newOrder })
   } catch (error) {
     console.error(error)
-    return res.status(400).json({ message: "There was an error while creating the order, please try again",error: error.message })
+    return res.status(400).json({ message: "There was an error while creating the order, please try again", error: error.message })
   }
 }
 
