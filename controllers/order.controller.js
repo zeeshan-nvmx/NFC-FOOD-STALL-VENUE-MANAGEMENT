@@ -75,10 +75,7 @@ exports.getOrdersByStall = async (req, res) => {
     const total = await Order.countDocuments(queryCondition)
 
     return res.status(200).json({
-      orders,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
+      message: 'Orders fetched successfully', data: { orders, total, page, pages: Math.ceil(total / limit) }
     })
   } catch (error) {
     return res.status(400).json({ message: 'error fetching orders', error: error.message })

@@ -9,7 +9,7 @@ exports.createCustomer = async (req, res) => {
   const schema = Joi.object({
     name: Joi.string(),
     phone: Joi.string().length(11).required(),
-    cardUid: Joi.string().required(),
+    cardUid: Joi.string().required(), 
     createdBy: Joi.string().required(),
   })
 
@@ -31,9 +31,9 @@ exports.createCustomer = async (req, res) => {
     greenwebsms.append('message', message)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 
-    return res.status(201).json(newCustomer)
+    return res.status(201).json({ message: 'Customer created successfully', data: newCustomer })
   } catch (error) {
-    return res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: "There was an error while creating the customer, please try again", error: error.message })
   }
 }
 
@@ -103,12 +103,12 @@ exports.rechargeCard = async (req, res) => {
       customer._id,
       {
         $set: { moneyLeft: updatedMoneyLeft },
-        $push: { rechargeHistory: { rechargerName, rechargerId, amount: convertedMoney, date: new Date() } },
+        $push: { rechargeHistory: { rechargerName, rechargerId, amount: convertedMoney, balanceBeforeRecharge: prevMoneyLeft, date: new Date() } },
       },
       { new: true }
     )
 
-    const message = `Your card recharge was successful, you had a balance of ${prevMoneyLeft} previously. Your new balance is ${updatedCustomer.moneyLeft}`
+    const message = `Your card recharge was successful, you had a balance of ${prevMoneyLeft} taka previously. Your new balance is ${updatedCustomer.moneyLeft} taka`
 
     const greenwebsms = new URLSearchParams()
     greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
@@ -116,9 +116,9 @@ exports.rechargeCard = async (req, res) => {
     greenwebsms.append('message', message)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 
-    return res.json(updatedCustomer)
+    return res.json({ message: 'customer created successfully', data: updatedCustomer })
   } catch (error) {
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'customer created successfully', error: error.message })
   }
 }
 
@@ -129,7 +129,7 @@ exports.deleteCustomer = async (req, res) => {
     await Customer.findByIdAndDelete(customerId)
     return res.json({ message: 'Customer deleted successfully' })
   } catch (error) {
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'There was an error deleting this customer successfully', error: error.message })
   }
 }
 
@@ -150,9 +150,9 @@ exports.removeCardUid = async (req, res) => {
       return res.status(404).json({ message: 'This card doesnt belong to a customer' })
     }
 
-    return res.json(updatedCustomer)
+    return res.json({ message: 'customer Card removed successfully', data: updatedCustomer })
   } catch (error) {
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'There was an error while removing the card, please try again', error: error.message })
   }
 }
 
@@ -166,9 +166,9 @@ exports.getCustomerByCardUidOrPhone = async (req, res) => {
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
-        return res.json(customer);
+        return res.json({ message: 'customer fetched successfully', data: customer })
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: 'Couldnt find customer with this phone or card', error: error.message })
     }
 }
 
@@ -179,8 +179,8 @@ exports.addCardToCustomerByPhone = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' })
     }
-    return res.json(customer)
+    return res.json({ message: 'New card added to customer successfully', data: customer })
   } catch (error) {
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: 'There was an error while adding the new card, please try again', error: error.message })
   }
 }
