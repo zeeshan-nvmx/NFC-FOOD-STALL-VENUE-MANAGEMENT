@@ -223,7 +223,7 @@ exports.createOrder = async (req, res) => {
 
     const finalPriceWithVAT = totalAmount // Assuming VAT is already included in totalAmount
     if (customerDetails.moneyLeft < finalPriceWithVAT) {
-      return res.status(400).json({ message: 'Insufficient funds in customer account' })
+      return res.status(400).json({ message: 'Insufficient funds in customers NFC card' })
     }
 
     // Deduct stock
@@ -256,10 +256,10 @@ exports.createOrder = async (req, res) => {
     greenwebsms.append('message', message)
     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
 
-    return res.status(201).json({ message: 'Order created successfully, SMS sent, and customer balance updated', order: newOrder })
+    return res.status(201).json({ message: 'Order was created successfully, SMS sent, and customer balance was updated', order: newOrder })
   } catch (error) {
     console.error(error)
-    return res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: "There was an error while creating the order, please try again",error: error.message })
   }
 }
 
