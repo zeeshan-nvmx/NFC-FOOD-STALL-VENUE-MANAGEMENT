@@ -39,8 +39,6 @@ exports.createStall = async (req, res) => {
   }
 }
 
-
-
 exports.getStallMenu = async (req, res) => {
   try {
     const stalls = await Stall.find({}, 'motherStall menu -_id').sort('motherStall')
@@ -142,13 +140,16 @@ exports.getStall = async (req, res) => {
 
 exports.getAllStalls = async (req, res) => {
   try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Set time to start of the day
+
     const stalls = await Stall.aggregate([
       {
         $sort: { motherStall: 1 },
       },
       {
         $lookup: {
-          from: 'users',
+          from: 'users', // Assuming the stallAdmin references a collection named "users"
           localField: 'stallAdmin',
           foreignField: '_id',
           as: 'stallAdminDetails',
@@ -157,7 +158,30 @@ exports.getAllStalls = async (req, res) => {
       {
         $unwind: {
           path: '$stallAdminDetails',
-          preserveNullAndEmptyArrays: true,
+          preserveNullAndEmptyArrays: true, // This change ensures that stalls without a stallAdmin are still included
+        },
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { stallId: '$_id', today: today },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$stallId', '$$stallId'] }, { $gte: ['$orderDate', '$$today'] }],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                todayTotalOrderValue: { $sum: '$totalAmount' },
+                todayOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'todayOrders',
         },
       },
       {
@@ -167,24 +191,28 @@ exports.getAllStalls = async (req, res) => {
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ['$stallId', '$$stallId'] },
+                $expr: {
+                  $eq: ['$stallId', '$$stallId'],
+                },
               },
             },
             {
               $group: {
                 _id: null,
-                totalOrderValue: { $sum: '$totalAmount' },
-                orderCount: { $sum: 1 },
+                lifetimeTotalOrderValue: { $sum: '$totalAmount' },
+                lifetimeOrderCount: { $sum: 1 },
               },
             },
           ],
-          as: 'ordersInfo',
+          as: 'lifetimeOrders',
         },
       },
       {
         $addFields: {
-          totalOrderValue: { $ifNull: [{ $arrayElemAt: ['$ordersInfo.totalOrderValue', 0] }, 0] },
-          orderCount: { $ifNull: [{ $arrayElemAt: ['$ordersInfo.orderCount', 0] }, 0] },
+          todayTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayTotalOrderValue', 0] }, 0] },
+          todayOrderCount: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayOrderCount', 0] }, 0] },
+          lifetimeTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeTotalOrderValue', 0] }, 0] },
+          lifetimeOrderCount: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeOrderCount', 0] }, 0] },
         },
       },
       {
@@ -193,18 +221,20 @@ exports.getAllStalls = async (req, res) => {
           'stallAdminDetails._id': 1,
           'stallAdminDetails.name': 1,
           'stallAdminDetails.phone': 1,
-          totalOrderValue: 1,
-          orderCount: 1,
+          todayTotalOrderValue: 1,
+          todayOrderCount: 1,
+          lifetimeTotalOrderValue: 1,
+          lifetimeOrderCount: 1,
         },
       },
     ])
 
     return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
   } catch (error) {
-    console.error(error)
     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
   }
 }
+
 
 
 // Edit a stall
@@ -466,93 +496,95 @@ exports.getMenu = async (req, res) => {
 // }
 
 
-
+/*
 
 // getAllStalls implemented with mongodb aggregation pipeline
-// exports.getAllStalls = async (req, res) => {
-//   try {
-//     const today = new Date()
-//     today.setHours(0, 0, 0, 0) // Set time to start of the day
+exports.getAllStalls = async (req, res) => {
+  try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Set time to start of the day
 
-//     const stalls = await Stall.aggregate([
-//       {
-//         $sort: { motherStall: 1 },
-//       },
-//       {
-//         $lookup: {
-//           from: 'users', // Assuming the stallAdmin references a collection named "users"
-//           localField: 'stallAdmin',
-//           foreignField: '_id',
-//           as: 'stallAdminDetails',
-//         },
-//       },
-//       {
-//         $unwind: '$stallAdminDetails',
-//       },
-//       {
-//         $lookup: {
-//           from: 'orders',
-//           let: { stallId: '$_id', today: today },
-//           pipeline: [
-//             {
-//               $match: {
-//                 $expr: {
-//                   $and: [{ $eq: ['$stallId', '$$stallId'] }, { $gte: ['$orderDate', '$$today'] }],
-//                 },
-//               },
-//             },
-//             {
-//               $group: {
-//                 _id: null,
-//                 todayTotalOrderValue: { $sum: '$totalAmount' },
-//                 todayOrderCount: { $sum: 1 },
-//               },
-//             },
-//           ],
-//           as: 'todayOrders',
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: 'orders',
-//           localField: '_id',
-//           foreignField: 'stallId',
-//           pipeline: [
-//             {
-//               $group: {
-//                 _id: null,
-//                 lifetimeTotalOrderValue: { $sum: '$totalAmount' },
-//                 lifetimeOrderCount: { $sum: 1 },
-//               },
-//             },
-//           ],
-//           as: 'lifetimeOrders',
-//         },
-//       },
-//       {
-//         $addFields: {
-//           todayTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayTotalOrderValue', 0] }, 0] },
-//           todayOrderCount: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayOrderCount', 0] }, 0] },
-//           lifetimeTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeTotalOrderValue', 0] }, 0] },
-//           lifetimeOrderCount: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeOrderCount', 0] }, 0] },
-//         },
-//       },
-//       {
-//         $project: {
-//           motherStall: 1,
-//           'stallAdminDetails._id': 1,
-//           'stallAdminDetails.name': 1,
-//           'stallAdminDetails.phone': 1,
-//           todayTotalOrderValue: 1,
-//           todayOrderCount: 1,
-//           lifetimeTotalOrderValue: 1,
-//           lifetimeOrderCount: 1,
-//         },
-//       },
-//     ])
+    const stalls = await Stall.aggregate([
+      {
+        $sort: { motherStall: 1 },
+      },
+      {
+        $lookup: {
+          from: 'users', // Assuming the stallAdmin references a collection named "users"
+          localField: 'stallAdmin',
+          foreignField: '_id',
+          as: 'stallAdminDetails',
+        },
+      },
+      {
+        $unwind: '$stallAdminDetails',
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { stallId: '$_id', today: today },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$stallId', '$$stallId'] }, { $gte: ['$orderDate', '$$today'] }],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                todayTotalOrderValue: { $sum: '$totalAmount' },
+                todayOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'todayOrders',
+        },
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          localField: '_id',
+          foreignField: 'stallId',
+          pipeline: [
+            {
+              $group: {
+                _id: null,
+                lifetimeTotalOrderValue: { $sum: '$totalAmount' },
+                lifetimeOrderCount: { $sum: 1 },
+              },
+            },
+          ],
+          as: 'lifetimeOrders',
+        },
+      },
+      {
+        $addFields: {
+          todayTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayTotalOrderValue', 0] }, 0] },
+          todayOrderCount: { $ifNull: [{ $arrayElemAt: ['$todayOrders.todayOrderCount', 0] }, 0] },
+          lifetimeTotalOrderValue: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeTotalOrderValue', 0] }, 0] },
+          lifetimeOrderCount: { $ifNull: [{ $arrayElemAt: ['$lifetimeOrders.lifetimeOrderCount', 0] }, 0] },
+        },
+      },
+      {
+        $project: {
+          motherStall: 1,
+          'stallAdminDetails._id': 1,
+          'stallAdminDetails.name': 1,
+          'stallAdminDetails.phone': 1,
+          todayTotalOrderValue: 1,
+          todayOrderCount: 1,
+          lifetimeTotalOrderValue: 1,
+          lifetimeOrderCount: 1,
+        },
+      },
+    ])
 
-//     return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
-//   } catch (error) {
-//     return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
-//   }
-// }
+    return res.status(200).json({ message: 'Stalls retrieved successfully', data: stalls })
+  } catch (error) {
+    return res.status(400).json({ message: 'Error retrieving stalls', error: error.message })
+  }
+}
+
+*/
