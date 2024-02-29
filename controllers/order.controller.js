@@ -6,36 +6,94 @@ const mongoose = require('mongoose')
 const axios = require('axios')
 const Joi = require('joi')
 
+exports.createOrder = async (req, res) => {
+  const orderItemSchema = Joi.object({
+    foodName: Joi.string().required(),
+    quantity: Joi.number().integer().min(1).required(),
+    foodPrice: Joi.number().min(0).required(),
+  })
 
-// exports.getOrdersByStall = async (req, res) => {
-//   const { stallId } = req.params
-//   const page = parseInt(req.query.page) || 1
-//   const limit = parseInt(req.query.limit) || 10
-//   const skip = (page - 1) * limit
+  const orderSchema = Joi.object({
+    customer: Joi.string().required(),
+    stallId: Joi.string().required(),
+    orderItems: Joi.array().items(orderItemSchema).required(),
+    totalAmount: Joi.number().required(),
+    vat: Joi.number().required(),
+    orderServedBy: Joi.string().required(),
+  })
 
-//   try {
-//     const orders = await Order.find({ stallId })
-//       .populate({
-//         path: 'customer',
-//         select: 'name phone', // Only fetch the name and phone fields from the Customer document
-//       })
-//       .skip(skip)
-//       .limit(limit)
-//       .sort('-orderDate')
-//       .exec() // Executing the query
+  try {
+    await orderSchema.validateAsync(req.body, { abortEarly: false })
+    const { customer, stallId, orderItems, totalAmount, vat, orderServedBy } = req.body
 
-//     const total = await Order.countDocuments({ stallId })
+    const servedByUser = await User.findById(orderServedBy)
+    if (!servedByUser) {
+      return res.status(404).json({ message: 'ServedBy user not found' })
+    }
 
-//     return res.json({
-//       orders,
-//       total,
-//       page,
-//       pages: Math.ceil(total / limit),
-//     })
-//   } catch (error) {
-//     return res.status(400).json({ message: 'error fetching orders', error: error.message })
-//   }
-// }
+    const customerDetails = await Customer.findById(customer)
+    if (!customerDetails) {
+      return res.status(404).json({ message: 'Customer not found' })
+    }
+
+    const stallDetails = await Stall.findById(stallId)
+    if (!stallDetails) {
+      return res.status(404).json({ message: 'Stall not found' })
+    }
+
+    let insufficientStockItem = ''
+    for (const orderItem of orderItems) {
+      const menuItem = stallDetails.menu.find((item) => item.foodName === orderItem.foodName)
+      if (!menuItem || menuItem.currentStock < orderItem.quantity) {
+        insufficientStockItem = orderItem.foodName
+        break // Exit the loop on first insufficient stock found
+      }
+    }
+
+    if (insufficientStockItem) {
+      return res.status(400).json({ message: `Insufficient stock of ${insufficientStockItem}` })
+    }
+
+    const finalPriceWithVAT = totalAmount // Assuming VAT is already included in totalAmount
+    if (customerDetails.moneyLeft < finalPriceWithVAT) {
+      return res.status(400).json({ message: "Insufficient funds in customer's NFC card" })
+    }
+
+    orderItems.forEach((orderItem) => {
+      const menuItem = stallDetails.menu.find((item) => item.foodName === orderItem.foodName)
+      menuItem.currentStock -= orderItem.quantity
+    })
+
+    await stallDetails.save()
+
+    customerDetails.moneyLeft -= finalPriceWithVAT
+    const updatedCustomer = await customerDetails.save()
+
+    const newOrder = await Order.create({
+      customer,
+      stallId,
+      orderItems,
+      totalAmount,
+      vat,
+      orderServedBy,
+    })
+
+    const itemsDescription = orderItems.map((item) => `${item.quantity} x ${item.foodName}`).join(', ')
+    const message = `Order confirmed. Amount: ${finalPriceWithVAT}, Items: ${itemsDescription}, Balance before order: ${customerDetails.moneyLeft}, Current Balance: ${updatedCustomer.moneyLeft}, Served by: ${servedByUser.name}.`
+
+    const greenwebsms = new URLSearchParams()
+    greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
+    greenwebsms.append('to', customerDetails.phone)
+    greenwebsms.append('message', message)
+    await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
+
+    return res.status(201).json({ message: 'Order was created successfully, SMS sent, and customer balance was updated', order: newOrder })
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({ message: 'There was an error while creating the order, please try again', error: error.message })
+  }
+}
+
 
 exports.getOrdersByStall = async (req, res) => {
   const { stallId } = req.params
@@ -175,7 +233,9 @@ exports.getOrdersSummaryByStall = async (req, res) => {
   }
 }
 
-exports.createOrder = async (req, res) => {
+
+
+/* exports.createOrder = async (req, res) => {
   const orderItemSchema = Joi.object({
     foodName: Joi.string().required(),
     quantity: Joi.number().integer().min(1).required(),
@@ -260,89 +320,125 @@ exports.createOrder = async (req, res) => {
   }
 }
 
+*/
 
 
+/* exports.createOrder = async (req, res) => {
+  const orderItemSchema = Joi.object({
+    foodName: Joi.string().required(),
+    quantity: Joi.number().integer().min(1).required(),
+    foodPrice: Joi.number().min(0).required(),
+  })
 
+  const orderSchema = Joi.object({
+    customer: Joi.string().required(),
+    stallId: Joi.string().required(),
+    orderItems: Joi.array().items(orderItemSchema).required(),
+    totalAmount: Joi.number().required(),
+    vat: Joi.number().required(),
+    orderServedBy: Joi.string().required(),
+  })
 
-// exports.createOrder = async (req, res) => {
-//   const orderItemSchema = Joi.object({
-//     foodName: Joi.string().required(),
-//     quantity: Joi.number().integer().min(1).required(),
-//     foodPrice: Joi.number().min(0).required(),
-//   })
+  try {
+    await orderSchema.validateAsync(req.body, { abortEarly: false })
+    const { customer, stallId, orderItems, totalAmount, vat, orderServedBy } = req.body
 
-//   const orderSchema = Joi.object({
-//     customer: Joi.string().required(),
-//     stallId: Joi.string().required(),
-//     orderItems: Joi.array().items(orderItemSchema).required(),
-//     totalAmount: Joi.number().required(),
-//     vat: Joi.number().required(),
-//     orderServedBy: Joi.string().required(),
-//   })
+    const servedByUser = await User.findById(orderServedBy)
+    if (!servedByUser) {
+      return res.status(404).json({ message: 'ServedBy user not found' })
+    }
+
+    const customerDetails = await Customer.findById(customer)
+    if (!customerDetails) {
+      return res.status(404).json({ message: 'Customer not found' })
+    }
+
+    const stallDetails = await Stall.findById(stallId)
+    if (!stallDetails) {
+      return res.status(404).json({ message: 'Stall not found' })
+    }
+
+    // Deduct stock from the stall's menu items
+    orderItems.forEach((orderItem) => {
+      const menuItem = stallDetails.menu.find((item) => item.foodName === orderItem.foodName)
+      if (menuItem && menuItem.currentStock >= orderItem.quantity) {
+        menuItem.currentStock -= orderItem.quantity
+      } else {
+        throw new Error(`Insufficient stock for ${orderItem.foodName}`)
+      }
+    })
+
+    await stallDetails.save()
+
+    const prevBalance = customerDetails.moneyLeft
+
+    // Deduct the final total amount from the customer's balance
+    const finalPriceWithVAT = totalAmount 
+   
+   
+ //  + vat ( this vat was in the line above, adjusted for comments)
+    
+   
+   if (customerDetails.moneyLeft < finalPriceWithVAT) {
+      return res.status(400).json({ message: 'Insufficient funds in customer account' })
+    }
+
+    customerDetails.moneyLeft -= finalPriceWithVAT // Deduct the total cost from the customer's balance
+    const updatedCustomer = await customerDetails.save() // Save the updated customer details
+
+    const newOrder = await Order.create({
+      customer,
+      stallId,
+      orderItems,
+      totalAmount,
+      vat,
+      orderServedBy,
+    })
+
+    const itemsDescription = orderItems.map((item) => `${item.quantity} x ${item.foodName}`).join(', ')
+    const message = `Order confirmed. Amount: ${finalPriceWithVAT}, Items: ${itemsDescription}, Balance before order: ${prevBalance}, Current Balance: ${updatedCustomer.moneyLeft} Served by: ${servedByUser.name}.`
+
+    const greenwebsms = new URLSearchParams()
+    greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
+    greenwebsms.append('to', customerDetails.phone)
+    greenwebsms.append('message', message)
+    await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
+
+    return res.status(201).json({ message: 'Order created successfully, SMS sent, and customer balance updated', order: newOrder })
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({ message: error.message })
+  }
+} 
+
+*/
+
+// exports.getOrdersByStall = async (req, res) => {
+//   const { stallId } = req.params
+//   const page = parseInt(req.query.page) || 1
+//   const limit = parseInt(req.query.limit) || 10
+//   const skip = (page - 1) * limit
 
 //   try {
-//     await orderSchema.validateAsync(req.body, { abortEarly: false })
-//     const { customer, stallId, orderItems, totalAmount, vat, orderServedBy } = req.body
+//     const orders = await Order.find({ stallId })
+//       .populate({
+//         path: 'customer',
+//         select: 'name phone', // Only fetch the name and phone fields from the Customer document
+//       })
+//       .skip(skip)
+//       .limit(limit)
+//       .sort('-orderDate')
+//       .exec() // Executing the query
 
-//     const servedByUser = await User.findById(orderServedBy)
-//     if (!servedByUser) {
-//       return res.status(404).json({ message: 'ServedBy user not found' })
-//     }
+//     const total = await Order.countDocuments({ stallId })
 
-//     const customerDetails = await Customer.findById(customer)
-//     if (!customerDetails) {
-//       return res.status(404).json({ message: 'Customer not found' })
-//     }
-
-//     const stallDetails = await Stall.findById(stallId)
-//     if (!stallDetails) {
-//       return res.status(404).json({ message: 'Stall not found' })
-//     }
-
-//     // Deduct stock from the stall's menu items
-//     orderItems.forEach((orderItem) => {
-//       const menuItem = stallDetails.menu.find((item) => item.foodName === orderItem.foodName)
-//       if (menuItem && menuItem.currentStock >= orderItem.quantity) {
-//         menuItem.currentStock -= orderItem.quantity
-//       } else {
-//         throw new Error(`Insufficient stock for ${orderItem.foodName}`)
-//       }
+//     return res.json({
+//       orders,
+//       total,
+//       page,
+//       pages: Math.ceil(total / limit),
 //     })
-
-//     await stallDetails.save()
-
-//     const prevBalance = customerDetails.moneyLeft
-
-//     // Deduct the final total amount from the customer's balance
-//     const finalPriceWithVAT = totalAmount /* + vat */
-//     if (customerDetails.moneyLeft < finalPriceWithVAT) {
-//       return res.status(400).json({ message: 'Insufficient funds in customer account' })
-//     }
-
-//     customerDetails.moneyLeft -= finalPriceWithVAT // Deduct the total cost from the customer's balance
-//     const updatedCustomer = await customerDetails.save() // Save the updated customer details
-
-//     const newOrder = await Order.create({
-//       customer,
-//       stallId,
-//       orderItems,
-//       totalAmount,
-//       vat,
-//       orderServedBy,
-//     })
-
-//     const itemsDescription = orderItems.map((item) => `${item.quantity} x ${item.foodName}`).join(', ')
-//     const message = `Order confirmed. Amount: ${finalPriceWithVAT}, Items: ${itemsDescription}, Balance before order: ${prevBalance}, Current Balance: ${updatedCustomer.moneyLeft} Served by: ${servedByUser.name}.`
-
-//     const greenwebsms = new URLSearchParams()
-//     greenwebsms.append('token', process.env.BDBULKSMS_TOKEN)
-//     greenwebsms.append('to', customerDetails.phone)
-//     greenwebsms.append('message', message)
-//     await axios.post('https://api.greenweb.com.bd/api.php', greenwebsms)
-
-//     return res.status(201).json({ message: 'Order created successfully, SMS sent, and customer balance updated', order: newOrder })
 //   } catch (error) {
-//     console.error(error)
-//     return res.status(400).json({ message: error.message })
+//     return res.status(400).json({ message: 'error fetching orders', error: error.message })
 //   }
 // }
