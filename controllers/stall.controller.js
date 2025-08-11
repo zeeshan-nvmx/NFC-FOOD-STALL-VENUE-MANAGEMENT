@@ -247,56 +247,6 @@ exports.getMenu = async (req, res) => {
   }
 }
 
-// exports.getStall = async (req, res) => {
-//   const { stallId } = req.params
-//   try {
-//     const stall = await Stall.findById(stallId)
-//     if (!stall) {
-//       return res.status(404).json({ message: 'Stall not found' })
-//     }
-
-//     // Identify today's date and set it to start of the day
-//     const today = new Date()
-//     today.setHours(0, 0, 0, 0)
-
-//     // Calculate today's total order value and count
-//     const todayOrders = await Order.find({
-//       stallId: stallId,
-//       orderDate: { $gte: today },
-//     })
-
-//     let todayTotalOrderValue = 0
-//     let todayOrderCount = todayOrders.length
-
-//     todayOrders.forEach((order) => {
-//       todayTotalOrderValue += order.totalAmount
-//     })
-
-//     // Calculate lifetime total order value and count
-//     const lifetimeOrders = await Order.find({ stallId: stallId })
-
-//     let lifetimeTotalOrderValue = 0
-//     let lifetimeOrderCount = lifetimeOrders.length
-
-//     lifetimeOrders.forEach((order) => {
-//       lifetimeTotalOrderValue += order.totalAmount
-//     })
-
-//     return res.status(200).json({
-//       message: 'Stall retrieved successfully',
-//       data: {
-//         ...stall.toObject(),
-//         todayTotalOrderValue,
-//         todayOrderCount,
-//         lifetimeTotalOrderValue,
-//         lifetimeOrderCount,
-//       },
-//     })
-//   } catch (error) {
-//     return res.status(400).json({ message: 'Error retrieving stall', error: error.message })
-//   }
-// }
-
 exports.getStall = async (req, res) => {
   const { stallId } = req.params
   const today = new Date()

@@ -127,6 +127,26 @@ async function login(req, res) {
   }
 }
 
+async function getAllUsers(req, res) {
+  const page = parseInt(req.query.page, 10) || 1
+  const limit = parseInt(req.query.limit, 10) || 10
+  const skip = (page - 1) * limit
+
+  try {
+    const users = await User.find().select('-password -otp -otpExpires').skip(skip).limit(limit)
+    const total = await User.countDocuments({})
+    return res.status(200).json({
+      message: 'Users fetched successfully',
+      users,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Failed to retrieve users', error: error.message })
+  }
+}
+
 async function logout(req, res) {
   return res.status(200).json({ message: 'Successfully logged out' })
 }
@@ -189,4 +209,4 @@ async function validateOTPAndResetPassword(req, res) {
   }
 }
 
-module.exports = { register, login, logout, requestPasswordReset, validateOTPAndResetPassword }
+module.exports = { register, login, logout, requestPasswordReset, validateOTPAndResetPassword, getAllUsers }
